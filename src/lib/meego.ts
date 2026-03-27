@@ -28,6 +28,18 @@ interface MeegoCollectionResult {
   error: string | null;
 }
 
+interface CreateFeatureInMeegoInput {
+  title: string;
+  priority: FeaturePriority;
+  prdUrl?: string | null;
+}
+
+interface CreateFeatureInMeegoResult {
+  feature: DashboardFeature | null;
+  meegoUrl: string;
+  workItemId: string;
+}
+
 const LAUNCHED_STATES = new Set(["CLOSED", "DONE", "RESOLVED", "RELEASED", "LAUNCHED"]);
 const IN_PROGRESS_STATES = new Set([
   "IN_PROGRESS",
@@ -101,6 +113,16 @@ const PRIORITY_MAP: Record<string, FeaturePriority> = {
   待定: "tbd",
 };
 
+const PRIORITY_OPTION_IDS: Record<FeaturePriority, string> = {
+  p0: "0",
+  p1: "1",
+  p2: "2",
+  p3: "3",
+  tbd: "4",
+};
+
+const DEFAULT_STORY_TEMPLATE_ID = "207989";
+
 function getEnv() {
   return {
     url: process.env.MEEGO_MCP_URL ?? "https://meego.larkoffice.com/mcp_server/v1",
@@ -143,6 +165,10 @@ function getTextBlocks(result: McpToolResult): string[] {
 
 function extractString(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value : null;
+}
+
+function getProjectKeyForCreate() {
+  return getEnv().projectKey ?? "tiktok";
 }
 
 function translateDisplayLabel(value: string | null | undefined): string | null {
@@ -195,6 +221,29 @@ function extractMarkdownFieldValue(markdown: string, key: string): string | null
   const pattern = new RegExp(`\\|\\s*${escapeRegExp(key)}\\s*\\|\\s*(.*?)\\s*\\|`);
   const match = section.match(pattern);
   return match?.[1]?.trim() ?? null;
+}
+
+function parseCreatedWorkItem(result: McpToolResult): { workItemId: string; meegoUrl: string } | null {
+  for (const block of getTextBlocks(result)) {
+    try {
+      const parsed = JSON.parse(block) as { work_item_id?: number | string; url?: string };
+      const workItemId = parsed.work_item_id ? String(parsed.work_item_id) : null;
+      const meegoUrl = extractString(parsed.url);
+
+      if (workItemId && meegoUrl) {
+        return { workItemId, meegoUrl };
+      }
+    } catch {
+      const meegoUrl = block.match(/https:\/\/meego\.larkoffice\.com\/[^\s"]+\/story\/detail\/\d+/)?.[0];
+      const workItemId = meegoUrl?.match(/\/detail\/(\d+)/)?.[1];
+
+      if (workItemId && meegoUrl) {
+        return { workItemId, meegoUrl };
+      }
+    }
+  }
+
+  return null;
 }
 
 function extractDisplayName(value: string): string {
@@ -492,6 +541,74 @@ export async function getFeatureStatusesFromMeego(features: FeatureSeed[]): Prom
     return {
       features: resolved,
       error: resolved.length > 0 ? null : firstError ?? "Unable to load Meego stories.",
+    };
+  } finally {
+    await transport.close();
+  }
+}
+
+export async function createFeatureInMeego(
+  input: CreateFeatureInMeegoInput,
+): Promise<CreateFeatureInMeegoResult> {
+  const connection = await createMcpClient();
+
+  if (!connection) {
+    throw new Error("Meego MCP is not configured.");
+  }
+
+  const { client, transport } = connection;
+
+  try {
+    const result = (await client.callTool({
+      name: "create_workitem",
+      arguments: {
+        project_key: getProjectKeyForCreate(),
+        work_item_type: "story",
+        fields: [
+          {
+            field_key: "template",
+            field_value: DEFAULT_STORY_TEMPLATE_ID,
+          },
+          {
+            field_key: "name",
+            field_value: input.title.trim(),
+          },
+          {
+            field_key: "priority",
+            field_value: PRIORITY_OPTION_IDS[input.priority],
+          },
+          ...(input.prdUrl
+            ? [
+                {
+                  field_key: "wiki",
+                  field_value: input.prdUrl.trim(),
+                },
+              ]
+            : []),
+        ],
+      },
+    })) as McpToolResult;
+
+    const created = parseCreatedWorkItem(result);
+
+    if (!created) {
+      throw new Error("Meego did not return the created story URL.");
+    }
+
+    const seed: FeatureSeed = {
+      id: `story-${created.workItemId}`,
+      priority: input.priority,
+      defaultStatus: "planned",
+      meegoIssueId: created.workItemId,
+      meegoUrl: created.meegoUrl,
+    };
+
+    const featureResult = await getFeatureWithClient(client, seed, getProjectKeyForCreate());
+
+    return {
+      feature: featureResult.feature,
+      meegoUrl: created.meegoUrl,
+      workItemId: created.workItemId,
     };
   } finally {
     await transport.close();

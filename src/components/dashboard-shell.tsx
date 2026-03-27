@@ -13,7 +13,8 @@ import {
   Search,
   SlidersHorizontal,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { startTransition, type FormEvent, type ReactNode, useMemo, useState } from "react";
 import {
   DashboardData,
   DashboardFeature,
@@ -162,7 +163,7 @@ function ToolbarSelect<T extends string>({
   onChange,
   options,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   value: T;
   onChange: (value: T) => void;
   options: Record<T, string>;
@@ -191,7 +192,7 @@ function FeatureRow({ feature }: { feature: DashboardFeature }) {
   const priority = priorityMeta[feature.priority];
 
   return (
-    <article className="grid grid-cols-[minmax(0,2.05fr)_126px_160px_82px_86px_100px_120px_190px_140px] items-center gap-4 border-t border-[#25284b] px-5 py-3.5">
+    <article className="grid grid-cols-[minmax(0,2.05fr)_126px_160px_82px_86px_100px_120px_110px_190px_140px] items-center gap-4 border-t border-[#25284b] px-5 py-3.5">
       <div className="min-w-0">
         <h3 className="truncate text-[14px] font-semibold tracking-[-0.04em] text-white">
           {feature.title}
@@ -246,9 +247,16 @@ function FeatureRow({ feature }: { feature: DashboardFeature }) {
 }
 
 export function DashboardShell({ initialData }: { initialData: DashboardData }) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FeatureFilter>("all");
   const [priorityFilter, setPriorityFilter] = useState<"all" | FeaturePriority>("all");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [titleInput, setTitleInput] = useState("");
+  const [priorityInput, setPriorityInput] = useState<FeaturePriority>("p2");
+  const [prdUrlInput, setPrdUrlInput] = useState("");
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   const filteredFeatures = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -295,6 +303,44 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
     launched: initialData.features.filter((feature) => feature.status === "launched").length,
     critical: initialData.features.filter((feature) => feature.priority === "p0").length,
   };
+
+  async function handleCreateFeature(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setCreateError(null);
+    setIsCreating(true);
+
+    try {
+      const response = await fetch("/api/features", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: titleInput,
+          priority: priorityInput,
+          prdUrl: prdUrlInput,
+        }),
+      });
+
+      const payload = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to create the Meego story.");
+      }
+
+      setIsCreateOpen(false);
+      setTitleInput("");
+      setPriorityInput("p2");
+      setPrdUrlInput("");
+      startTransition(() => {
+        router.refresh();
+      });
+    } catch (error) {
+      setCreateError(error instanceof Error ? error.message : "Unable to create the Meego story.");
+    } finally {
+      setIsCreating(false);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-[#0d1023] px-5 py-6 text-white md:px-8 lg:px-10">
@@ -372,6 +418,7 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
 
           <button
             type="button"
+            onClick={() => setIsCreateOpen(true)}
             className="inline-flex h-[40px] items-center justify-center rounded-[12px] bg-white px-5 text-[13px] font-semibold text-black transition hover:bg-[#f2f3f8]"
           >
             Add Feature
@@ -380,7 +427,7 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
 
         <section className="mt-6 overflow-x-auto rounded-[20px] border border-[#25284b] bg-[#161937] shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
           <div className="min-w-[1360px]">
-            <div className="grid grid-cols-[minmax(0,2.05fr)_126px_160px_82px_86px_100px_120px_190px_140px] gap-4 px-5 py-3.5 text-[12px] font-semibold text-[#a0a5ba]">
+            <div className="grid grid-cols-[minmax(0,2.05fr)_126px_160px_82px_86px_100px_120px_110px_190px_140px] gap-4 px-5 py-3.5 text-[12px] font-semibold text-[#a0a5ba]">
               <div>Feature</div>
               <div>Status</div>
               <div>Business Line</div>
@@ -408,6 +455,103 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
           </div>
         </section>
       </div>
+
+      {isCreateOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#060813]/80 px-4">
+          <div className="w-full max-w-[420px] rounded-[20px] border border-[#25284b] bg-[#161937] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-[18px] font-semibold tracking-[-0.04em] text-white">Add Feature</h2>
+                <p className="mt-1 text-[12px] text-[#8f95ad]">
+                  Create a new TikTok Meego story and add it to this dashboard.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (isCreating) {
+                    return;
+                  }
+
+                  setIsCreateOpen(false);
+                  setCreateError(null);
+                }}
+                className="text-[12px] font-medium text-[#9aa0b6] transition hover:text-white"
+              >
+                Close
+              </button>
+            </div>
+
+            <form className="mt-5 space-y-4" onSubmit={handleCreateFeature}>
+              <label className="block">
+                <span className="mb-2 block text-[12px] font-medium text-[#aeb4c8]">Title</span>
+                <input
+                  value={titleInput}
+                  onChange={(event) => setTitleInput(event.target.value)}
+                  placeholder="Feature title"
+                  className="h-[42px] w-full rounded-[12px] border border-[#292d57] bg-[#11142c] px-3 text-[13px] text-white outline-none placeholder:text-[#6f7693]"
+                  required
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-[12px] font-medium text-[#aeb4c8]">Priority</span>
+                <select
+                  value={priorityInput}
+                  onChange={(event) => setPriorityInput(event.target.value as FeaturePriority)}
+                  className="h-[42px] w-full rounded-[12px] border border-[#292d57] bg-[#11142c] px-3 text-[13px] text-white outline-none"
+                >
+                  <option value="p0">P0</option>
+                  <option value="p1">P1</option>
+                  <option value="p2">P2</option>
+                  <option value="p3">P3</option>
+                  <option value="tbd">TBD</option>
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-[12px] font-medium text-[#aeb4c8]">PRD URL</span>
+                <input
+                  value={prdUrlInput}
+                  onChange={(event) => setPrdUrlInput(event.target.value)}
+                  placeholder="https://..."
+                  className="h-[42px] w-full rounded-[12px] border border-[#292d57] bg-[#11142c] px-3 text-[13px] text-white outline-none placeholder:text-[#6f7693]"
+                />
+              </label>
+
+              {createError ? (
+                <p className="rounded-[12px] border border-[#8a2e41] bg-[#381723] px-3 py-2 text-[12px] text-[#ff9fb1]">
+                  {createError}
+                </p>
+              ) : null}
+
+              <div className="flex items-center justify-end gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isCreating) {
+                      return;
+                    }
+
+                    setIsCreateOpen(false);
+                    setCreateError(null);
+                  }}
+                  className="inline-flex h-[40px] items-center justify-center rounded-[12px] border border-[#292d57] px-4 text-[13px] font-medium text-[#c8cede] transition hover:bg-[#1a1e3c]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreating}
+                  className="inline-flex h-[40px] items-center justify-center rounded-[12px] bg-white px-4 text-[13px] font-semibold text-black transition hover:bg-[#f2f3f8] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isCreating ? "Creating..." : "Create in Meego"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
