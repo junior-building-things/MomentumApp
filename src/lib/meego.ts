@@ -1,23 +1,15 @@
-import { FeatureDefinition, FeatureStatus } from "@/lib/types";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { DashboardFeature, FeatureDefinition, FeatureStatus } from "@/lib/types";
 
-interface MeegoField {
-  field_alias?: string;
-  field_key?: string;
-  field_value?: string;
-  field_internal_value?: string;
+interface McpTextContent {
+  type: "text";
+  text: string;
 }
 
-interface MeegoIssueResponse {
-  data?: {
-    fields?: MeegoField[];
-    issue_detail?: {
-      fields?: MeegoField[];
-    };
-    issue?: {
-      fields?: MeegoField[];
-    };
-  };
-  fields?: MeegoField[];
+interface McpToolResult {
+  content?: McpTextContent[];
+  isError?: boolean;
 }
 
 interface MeegoStatusResult {
@@ -27,8 +19,6 @@ interface MeegoStatusResult {
   lastSyncedAt: string | null;
   isLive: boolean;
 }
-
-const MEEGO_STATUS_FIELD = "work_item_status";
 
 const LAUNCHED_STATES = new Set(["CLOSED", "DONE", "RESOLVED", "RELEASED", "LAUNCHED"]);
 const IN_PROGRESS_STATES = new Set([
@@ -45,38 +35,11 @@ const AT_RISK_STATES = new Set(["BLOCKED", "RISK", "AT_RISK", "ON_HOLD", "DELAYE
 const PLANNED_STATES = new Set(["OPEN", "TODO", "BACKLOG", "PLANNED", "INIT"]);
 
 function getEnv() {
-  const baseUrl =
-    process.env.MEEGO_BASE_URL?.replace(/\/$/, "") ??
-    "https://meego.bytedance.net/open-api/v1";
-  const authHeader = process.env.MEEGO_AUTH_HEADER ?? "Authorization";
-  const authScheme = process.env.MEEGO_AUTH_SCHEME ?? "Bearer";
-  const appBaseUrl =
-    process.env.MEEGO_APP_BASE_URL?.replace(/\/$/, "") ?? "https://meego.bytedance.net";
-
   return {
-    baseUrl,
-    appBaseUrl,
-    authHeader,
-    authScheme,
-    token: process.env.MEEGO_OPEN_API_TOKEN,
+    url: process.env.MEEGO_MCP_URL ?? "https://meego.larkoffice.com/mcp_server/v1",
+    token: process.env.MEEGO_MCP_TOKEN,
     projectKey: process.env.MEEGO_PROJECT_KEY,
   };
-}
-
-function extractFields(payload: MeegoIssueResponse): MeegoField[] {
-  if (payload.data?.fields) {
-    return payload.data.fields;
-  }
-
-  if (payload.data?.issue_detail?.fields) {
-    return payload.data.issue_detail.fields;
-  }
-
-  if (payload.data?.issue?.fields) {
-    return payload.data.issue.fields;
-  }
-
-  return payload.fields ?? [];
 }
 
 function mapStateToStatus(rawState: string | undefined, fallback: FeatureStatus): FeatureStatus {
@@ -105,66 +68,215 @@ function mapStateToStatus(rawState: string | undefined, fallback: FeatureStatus)
   return fallback;
 }
 
-export async function getFeatureStatusFromMeego(
-  feature: FeatureDefinition,
-): Promise<MeegoStatusResult> {
-  const { baseUrl, appBaseUrl, authHeader, authScheme, token, projectKey } = getEnv();
+function getTextBlocks(result: McpToolResult): string[] {
+  return (result.content ?? [])
+    .filter((item): item is McpTextContent => item.type === "text")
+    .map((item) => item.text);
+}
 
-  if (!token || !projectKey || !feature.meegoIssueId) {
-    return {
+function parseFirstJsonBlock(blocks: string[]): Record<string, unknown> | null {
+  for (const block of blocks) {
+    const trimmed = block.trim();
+
+    if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+      continue;
+    }
+
+    try {
+      const parsed = JSON.parse(trimmed) as unknown;
+
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+}
+
+function extractString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+function findStatusInObject(
+  payload: Record<string, unknown>,
+  fallback: FeatureStatus,
+): MeegoStatusResult {
+  const directCandidates = [
+    payload.work_item_status,
+    payload.status,
+    payload.state,
+    payload.state_key,
+  ];
+
+  for (const candidate of directCandidates) {
+    const meegoState = extractString(candidate);
+
+    if (meegoState) {
+      return {
+        status: mapStateToStatus(meegoState, fallback),
+        meegoState,
+        meegoUrl: null,
+        lastSyncedAt: new Date().toISOString(),
+        isLive: true,
+      };
+    }
+  }
+
+  const fields = payload.fields;
+
+  if (Array.isArray(fields)) {
+    for (const field of fields) {
+      if (!field || typeof field !== "object") {
+        continue;
+      }
+
+      const candidate = field as Record<string, unknown>;
+      const alias = extractString(candidate.field_alias) ?? extractString(candidate.field_key);
+
+      if (alias !== "work_item_status") {
+        continue;
+      }
+
+      const meegoState = extractString(candidate.field_value) ?? extractString(candidate.state_key);
+
+      if (meegoState) {
+        return {
+          status: mapStateToStatus(meegoState, fallback),
+          meegoState,
+          meegoUrl: null,
+          lastSyncedAt: new Date().toISOString(),
+          isLive: true,
+        };
+      }
+    }
+  }
+
+  return {
+    status: fallback,
+    meegoState: null,
+    meegoUrl: null,
+    lastSyncedAt: null,
+    isLive: false,
+  };
+}
+
+function fallbackStatus(feature: FeatureDefinition, override?: string | null): MeegoStatusResult {
+  return {
+    status: feature.defaultStatus,
+    meegoState: override ?? null,
+    meegoUrl: null,
+    lastSyncedAt: null,
+    isLive: false,
+  };
+}
+
+async function createMcpClient() {
+  const { url, token } = getEnv();
+
+  if (!token) {
+    return null;
+  }
+
+  const client = new Client({ name: "momentum-app", version: "0.1.0" });
+  const transport = new StreamableHTTPClientTransport(new URL(url), {
+    requestInit: {
+      headers: {
+        "X-Mcp-Token": token,
+      },
+    },
+  });
+
+  await client.connect(transport);
+
+  return { client, transport };
+}
+
+async function getFeatureStatusWithClient(
+  client: Client,
+  feature: FeatureDefinition,
+  projectKey: string,
+): Promise<MeegoStatusResult> {
+  if (!feature.meegoIssueId) {
+    return fallbackStatus(feature);
+  }
+
+  try {
+    const result = (await client.callTool({
+      name: "get_workitem_brief",
+      arguments: {
+        project_key: projectKey,
+        work_item_id: feature.meegoIssueId,
+        fields: ["work_item_status"],
+      },
+    })) as McpToolResult;
+
+    const blocks = getTextBlocks(result);
+    const payload = parseFirstJsonBlock(blocks);
+
+    if (payload) {
+      return findStatusInObject(payload, feature.defaultStatus);
+    }
+
+    const errorText = blocks.find((block) => block.toLowerCase().includes("error")) ?? null;
+    return fallbackStatus(feature, errorText);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : null;
+    return fallbackStatus(feature, message);
+  }
+}
+
+export async function getFeatureStatusesFromMeego(
+  features: FeatureDefinition[],
+): Promise<DashboardFeature[]> {
+  const { projectKey } = getEnv();
+
+  if (!projectKey) {
+    return features.map((feature) => ({
+      ...feature,
       status: feature.defaultStatus,
       meegoState: null,
       meegoUrl: null,
       lastSyncedAt: null,
       isLive: false,
-    };
+    }));
   }
 
-  const authValue = authScheme ? `${authScheme} ${token}` : token;
-  const requestUrl = `${baseUrl}/project/${projectKey}/issues/${feature.meegoIssueId}`;
+  const connection = await createMcpClient();
 
-  try {
-    const response = await fetch(requestUrl, {
-      headers: {
-        Accept: "application/json",
-        [authHeader]: authValue,
-      },
-      cache: "no-store",
-      next: { revalidate: 0 },
-    });
-
-    if (!response.ok) {
-      return {
-        status: feature.defaultStatus,
-        meegoState: `HTTP_${response.status}`,
-        meegoUrl: `${appBaseUrl}/${projectKey}/issue/${feature.meegoIssueId}`,
-        lastSyncedAt: null,
-        isLive: false,
-      };
-    }
-
-    const payload = (await response.json()) as MeegoIssueResponse;
-    const fields = extractFields(payload);
-    const statusField = fields.find(
-      (field) => field.field_alias === MEEGO_STATUS_FIELD || field.field_key === MEEGO_STATUS_FIELD,
-    );
-
-    const meegoState = statusField?.field_value ?? null;
-
-    return {
-      status: mapStateToStatus(meegoState ?? undefined, feature.defaultStatus),
-      meegoState,
-      meegoUrl: `${appBaseUrl}/${projectKey}/issue/${feature.meegoIssueId}`,
-      lastSyncedAt: new Date().toISOString(),
-      isLive: true,
-    };
-  } catch {
-    return {
+  if (!connection) {
+    return features.map((feature) => ({
+      ...feature,
       status: feature.defaultStatus,
       meegoState: null,
-      meegoUrl: `${appBaseUrl}/${projectKey}/issue/${feature.meegoIssueId}`,
+      meegoUrl: null,
       lastSyncedAt: null,
       isLive: false,
-    };
+    }));
+  }
+
+  const { client, transport } = connection;
+
+  try {
+    const enriched: DashboardFeature[] = [];
+
+    for (const feature of features) {
+      const meego = await getFeatureStatusWithClient(client, feature, projectKey);
+
+      enriched.push({
+        ...feature,
+        status: meego.status,
+        meegoState: meego.meegoState,
+        meegoUrl: meego.meegoUrl,
+        lastSyncedAt: meego.lastSyncedAt,
+        isLive: meego.isLive,
+      });
+    }
+
+    return enriched;
+  } finally {
+    await transport.close();
   }
 }

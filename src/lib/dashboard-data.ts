@@ -1,5 +1,5 @@
 import { featureRegistry } from "@/lib/feature-registry";
-import { getFeatureStatusFromMeego } from "@/lib/meego";
+import { getFeatureStatusesFromMeego } from "@/lib/meego";
 import { DashboardData, DashboardFeature, DashboardSummaryCard, FeatureStatus } from "@/lib/types";
 
 function createSummary(features: DashboardFeature[]): DashboardSummaryCard[] {
@@ -25,20 +25,7 @@ function createSummary(features: DashboardFeature[]): DashboardSummaryCard[] {
 }
 
 export async function getDashboardData(): Promise<DashboardData> {
-  const enriched = await Promise.all(
-    featureRegistry.map(async (feature) => {
-      const meego = await getFeatureStatusFromMeego(feature);
-
-      return {
-        ...feature,
-        status: meego.status,
-        meegoState: meego.meegoState,
-        meegoUrl: meego.meegoUrl,
-        lastSyncedAt: meego.lastSyncedAt,
-        isLive: meego.isLive,
-      } satisfies DashboardFeature;
-    }),
-  );
+  const enriched = await getFeatureStatusesFromMeego(featureRegistry);
 
   const liveFeatures = enriched.filter((feature) => feature.isLive);
   const lastSyncedAt = liveFeatures.length > 0 ? new Date().toISOString() : null;

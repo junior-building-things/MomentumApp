@@ -23,12 +23,11 @@ Feature tracking dashboard for product work, styled after the attached Figma boa
    cp .env.example .env.local
    ```
 
-3. Fill in your Meego values:
+3. Fill in your Meego MCP values:
 
-- `MEEGO_PROJECT_KEY`: your Meego department/project key
-- `MEEGO_OPEN_API_TOKEN`: Meego open API token
-- `MEEGO_AUTH_HEADER`: auth header name if Meego expects something other than `Authorization`
-- `MEEGO_AUTH_SCHEME`: auth prefix such as `Bearer`; leave blank if the token should be sent raw
+- `MEEGO_MCP_URL`: MCP endpoint, typically `https://meego.larkoffice.com/mcp_server/v1`
+- `MEEGO_MCP_TOKEN`: Meego MCP token
+- `MEEGO_PROJECT_KEY`: the Meego space key the app should query
 
 4. Start the app:
 
@@ -42,7 +41,7 @@ Feature tracking dashboard for product work, styled after the attached Figma boa
 - Live status sync is handled in `src/lib/meego.ts`
 - `GET /api/features` returns the same normalized dashboard payload used by the page
 
-The current implementation maps Meego `work_item_status` values into four dashboard states:
+The current implementation connects to the Meego MCP server and uses `get_workitem_brief` to read `work_item_status`. It maps that status into four dashboard states:
 
 - `planned`
 - `in_progress`
@@ -54,7 +53,7 @@ If your Meego workspace uses different state keys, update the state mapping sets
 ## Deploying to Vercel
 
 1. Import the GitHub repo into Vercel.
-2. Add the Meego environment variables in the Vercel project settings.
+2. Add the Meego MCP environment variables in the Vercel project settings.
 3. Deploy.
 
-If the Meego credentials are missing, the app falls back to preview data so the UI still renders.
+If the Meego MCP credentials are missing, the app falls back to preview data so the UI still renders.
