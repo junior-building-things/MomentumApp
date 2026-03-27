@@ -289,9 +289,13 @@ function parseTagValues(rawTags: string | null): string[] {
   return [];
 }
 
-function extractQuarter(rawTags: string | null): string | null {
-  const quarterTag = parseTagValues(rawTags).find((tag) => /(?:20\d{2}[- ]?)?Q[1-4]/i.test(tag));
-  return quarterTag ?? null;
+function extractQuarter(rawQuarterlyCycle: string | null, rawTags: string | null): string | null {
+  const quarterlyCycleValues = parseTagValues(rawQuarterlyCycle);
+  const tagValues = parseTagValues(rawTags);
+  const candidates = quarterlyCycleValues.length > 0 ? quarterlyCycleValues : tagValues;
+  const quarterTag = candidates.find((tag) => /(?:20\d{2}[- ]?)?Q[1-4]/i.test(tag));
+
+  return quarterTag ?? candidates[0] ?? null;
 }
 
 function chooseCurrentStatusLabel(tasks: FeatureTask[], meegoState: string | null): string {
@@ -318,6 +322,7 @@ function createFeatureFromMarkdown(markdown: string, seed: FeatureSeed): Dashboa
   const rawBusinessLine = extractMarkdownFieldValue(markdown, "业务线");
   const rawPriority = extractMarkdownFieldValue(markdown, "优先级");
   const rawPrdUrl = extractMarkdownFieldValue(markdown, "PRD");
+  const rawQuarterlyCycle = extractMarkdownFieldValue(markdown, "Quarterly Cycle");
   const rawTags = extractMarkdownFieldValue(markdown, "标签");
   const updatedAt =
     extractMarkdownTableValue(markdown, "更新时间") ?? extractMarkdownTableValue(markdown, "创建时间");
@@ -334,7 +339,7 @@ function createFeatureFromMarkdown(markdown: string, seed: FeatureSeed): Dashboa
     team: parseTeamFromProject(rawProject) ?? "Unknown Team",
     businessLine: rawBusinessLine,
     owner: parseOwnerFromRoles(rawRoles) ?? "Unknown Owner",
-    quarter: extractQuarter(rawTags),
+    quarter: extractQuarter(rawQuarterlyCycle, rawTags),
     dueDate: updatedAt,
     priority: mapPriority(rawPriority, seed.priority),
     priorityLabel: rawPriority ?? formatFallbackPriorityLabel(seed.priority),
@@ -381,7 +386,7 @@ async function getFeatureWithClient(
 
   try {
     const args: Record<string, unknown> = {
-      fields: ["work_item_status", "business", "priority", "PRD", "tags"],
+      fields: ["work_item_status", "business", "priority", "PRD", "Quarterly Cycle", "tags"],
     };
 
     if (seed.meegoUrl) {
