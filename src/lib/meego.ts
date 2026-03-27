@@ -201,24 +201,29 @@ function extractDisplayName(value: string): string {
   return value.split("(")[0]?.trim() || value.trim();
 }
 
-function parseOwnerFromRoles(rawRoles: string | null): string | null {
+function parseRoleOwners(rawRoles: string | null, roleName: string): string | null {
   if (!rawRoles) {
     return null;
   }
 
   try {
     const parsed = JSON.parse(rawRoles) as Array<Record<string, string>>;
-    const pmRole = parsed.find((entry) => typeof entry.PM === "string");
-    const pmValue = pmRole?.PM;
+    const roleEntry = parsed.find((entry) => typeof entry[roleName] === "string");
+    const rawValue = roleEntry?.[roleName];
 
-    if (pmValue && pmValue !== "未填写") {
-      return extractDisplayName(pmValue);
+    if (!rawValue || rawValue === "未填写") {
+      return null;
     }
+
+    const owners = rawValue
+      .split(",")
+      .map((value) => extractDisplayName(value))
+      .filter((value) => value && value !== "未填写");
+
+    return owners.length > 0 ? owners.join(", ") : null;
   } catch {
     return null;
   }
-
-  return null;
 }
 
 function parseTeamFromProject(rawProject: string | null): string | null {
@@ -338,7 +343,10 @@ function createFeatureFromMarkdown(markdown: string, seed: FeatureSeed): Dashboa
     description: "",
     team: parseTeamFromProject(rawProject) ?? "Unknown Team",
     businessLine: rawBusinessLine,
-    owner: parseOwnerFromRoles(rawRoles) ?? "Unknown Owner",
+    owner: parseRoleOwners(rawRoles, "PM") ?? "Unknown Owner",
+    iosPoc: parseRoleOwners(rawRoles, "iOS"),
+    androidPoc: parseRoleOwners(rawRoles, "Android"),
+    serverPoc: parseRoleOwners(rawRoles, "Server"),
     quarter: extractQuarter(rawQuarterlyCycle, rawTags),
     dueDate: updatedAt,
     priority: mapPriority(rawPriority, seed.priority),

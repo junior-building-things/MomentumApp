@@ -29,6 +29,9 @@ export interface DashboardFeature {
   team: string;
   businessLine: string | null;
   owner: string;
+  iosPoc: string | null;
+  androidPoc: string | null;
+  serverPoc: string | null;
   quarter: string | null;
   dueDate: string;
   priority: FeaturePriority;

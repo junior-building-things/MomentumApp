@@ -87,6 +87,15 @@ function buildFeatureSubtitle(feature: DashboardFeature) {
   return feature.description || [feature.team, feature.meegoState].filter(Boolean).join(" • ");
 }
 
+function buildMobilePocLabel(feature: DashboardFeature) {
+  const parts = [
+    feature.androidPoc ? `Android: ${feature.androidPoc}` : null,
+    feature.iosPoc ? `iOS: ${feature.iosPoc}` : null,
+  ].filter(Boolean);
+
+  return parts.join(" | ") || "—";
+}
+
 function SummaryCard({
   label,
   value,
@@ -165,7 +174,7 @@ function FeatureRow({ feature }: { feature: DashboardFeature }) {
   const featureLink = feature.prdUrl ?? feature.meegoUrl;
 
   return (
-    <article className="grid grid-cols-[minmax(0,2.5fr)_160px_210px_86px_120px] items-center gap-4 border-t border-[#25284b] px-5 py-3.5">
+    <article className="grid grid-cols-[minmax(0,2.4fr)_150px_180px_86px_190px_140px] items-center gap-4 border-t border-[#25284b] px-5 py-3.5">
       <div className="min-w-0">
         {featureLink ? (
           <a
@@ -206,7 +215,11 @@ function FeatureRow({ feature }: { feature: DashboardFeature }) {
       </div>
 
       <div>
-        <p className="truncate text-[12px] text-[#b7bbca]">{feature.owner}</p>
+        <p className="truncate text-[12px] text-[#b7bbca]">{buildMobilePocLabel(feature)}</p>
+      </div>
+
+      <div>
+        <p className="truncate text-[12px] text-[#b7bbca]">{feature.serverPoc ?? "—"}</p>
       </div>
     </article>
   );
@@ -237,6 +250,9 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
         feature.title,
         feature.description,
         feature.owner,
+        feature.iosPoc ?? "",
+        feature.androidPoc ?? "",
+        feature.serverPoc ?? "",
         feature.team,
         feature.businessLine ?? "",
         feature.priorityLabel,
@@ -339,13 +355,14 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
         </section>
 
         <section className="mt-6 overflow-x-auto rounded-[20px] border border-[#25284b] bg-[#161937] shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
-          <div className="min-w-[920px]">
-            <div className="grid grid-cols-[minmax(0,2.5fr)_160px_210px_86px_120px] gap-4 px-5 py-3.5 text-[12px] font-semibold text-[#a0a5ba]">
+          <div className="min-w-[1040px]">
+            <div className="grid grid-cols-[minmax(0,2.4fr)_150px_180px_86px_190px_140px] gap-4 px-5 py-3.5 text-[12px] font-semibold text-[#a0a5ba]">
               <div>Feature</div>
               <div>Current Status</div>
               <div>Business Line</div>
               <div>Priority</div>
-              <div>PM</div>
+              <div>Android/iOS POC</div>
+              <div>Server POC</div>
             </div>
 
             {filteredFeatures.length === 0 ? (
