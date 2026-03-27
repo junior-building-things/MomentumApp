@@ -33,6 +33,7 @@ export interface DashboardFeature {
   androidPoc: string | null;
   serverPoc: string | null;
   quarter: string | null;
+  version: string | null;
   dueDate: string;
   priority: FeaturePriority;
   priorityLabel: string;

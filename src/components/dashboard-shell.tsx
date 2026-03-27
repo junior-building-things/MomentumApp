@@ -169,7 +169,7 @@ function FeatureRow({ feature }: { feature: DashboardFeature }) {
   const featureLink = feature.prdUrl ?? feature.meegoUrl;
 
   return (
-    <article className="grid grid-cols-[minmax(0,2.4fr)_150px_180px_86px_190px_140px] items-center gap-4 border-t border-[#25284b] px-5 py-3.5">
+    <article className="grid grid-cols-[minmax(0,2.25fr)_140px_170px_82px_110px_190px_140px] items-center gap-4 border-t border-[#25284b] px-5 py-3.5">
       <div className="min-w-0">
         {featureLink ? (
           <a
@@ -205,6 +205,10 @@ function FeatureRow({ feature }: { feature: DashboardFeature }) {
         >
           {feature.priorityLabel || priority.label}
         </span>
+      </div>
+
+      <div>
+        <p className="truncate text-[12px] text-[#b7bbca]">{feature.version ?? "—"}</p>
       </div>
 
       <div>
@@ -249,6 +253,7 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
         feature.team,
         feature.businessLine ?? "",
         feature.priorityLabel,
+        feature.version ?? "",
         feature.meegoState ?? "",
       ]
         .join(" ")
@@ -348,12 +353,13 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
         </section>
 
         <section className="mt-6 overflow-x-auto rounded-[20px] border border-[#25284b] bg-[#161937] shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
-          <div className="min-w-[1040px]">
-            <div className="grid grid-cols-[minmax(0,2.4fr)_150px_180px_86px_190px_140px] gap-4 px-5 py-3.5 text-[12px] font-semibold text-[#a0a5ba]">
+          <div className="min-w-[1120px]">
+            <div className="grid grid-cols-[minmax(0,2.25fr)_140px_170px_82px_110px_190px_140px] gap-4 px-5 py-3.5 text-[12px] font-semibold text-[#a0a5ba]">
               <div>Feature</div>
               <div>Status</div>
               <div>Business Line</div>
               <div>Priority</div>
+              <div>Version</div>
               <div>Android/iOS</div>
               <div>Server</div>
             </div>

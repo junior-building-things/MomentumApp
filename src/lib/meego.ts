@@ -303,6 +303,10 @@ function extractQuarter(rawQuarterlyCycle: string | null, rawTags: string | null
   return quarterTag ?? candidates[0] ?? null;
 }
 
+function extractVersion(rawActualVersion: string | null, rawEstimatedVersion: string | null) {
+  return rawActualVersion ?? rawEstimatedVersion ?? null;
+}
+
 function chooseCurrentStatusLabel(tasks: FeatureTask[], meegoState: string | null): string {
   const rawTaskLabels = tasks.map((task) => task.label).filter(Boolean);
 
@@ -329,6 +333,12 @@ function createFeatureFromMarkdown(markdown: string, seed: FeatureSeed): Dashboa
   const rawPrdUrl = extractMarkdownFieldValue(markdown, "PRD");
   const rawQuarterlyCycle = extractMarkdownFieldValue(markdown, "Quarterly Cycle");
   const rawTags = extractMarkdownFieldValue(markdown, "标签");
+  const rawActualVersion =
+    extractMarkdownFieldValue(markdown, "iOS 实际上车版本（旧）") ??
+    extractMarkdownFieldValue(markdown, "iOS实际上车版本（旧）");
+  const rawEstimatedVersion =
+    extractMarkdownFieldValue(markdown, "TT Exp.Version（旧）") ??
+    extractMarkdownFieldValue(markdown, "TT Exp.Version");
   const updatedAt =
     extractMarkdownTableValue(markdown, "更新时间") ?? extractMarkdownTableValue(markdown, "创建时间");
   const tasks = parseInProgressTasks(markdown);
@@ -348,6 +358,7 @@ function createFeatureFromMarkdown(markdown: string, seed: FeatureSeed): Dashboa
     androidPoc: parseRoleOwners(rawRoles, "Android"),
     serverPoc: parseRoleOwners(rawRoles, "Server"),
     quarter: extractQuarter(rawQuarterlyCycle, rawTags),
+    version: extractVersion(rawActualVersion, rawEstimatedVersion),
     dueDate: updatedAt,
     priority: mapPriority(rawPriority, seed.priority),
     priorityLabel: rawPriority ?? formatFallbackPriorityLabel(seed.priority),
@@ -394,7 +405,16 @@ async function getFeatureWithClient(
 
   try {
     const args: Record<string, unknown> = {
-      fields: ["work_item_status", "business", "priority", "PRD", "Quarterly Cycle", "tags"],
+      fields: [
+        "work_item_status",
+        "business",
+        "priority",
+        "PRD",
+        "Quarterly Cycle",
+        "tags",
+        "ios_release_version",
+        "estimated_version",
+      ],
     };
 
     if (seed.meegoUrl) {
