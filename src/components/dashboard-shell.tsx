@@ -106,6 +106,37 @@ function LinkCell({
   );
 }
 
+function ComplianceCell({
+  feature,
+  canCreate,
+  isCreating,
+  onCreate,
+}: {
+  feature: DashboardFeature;
+  canCreate: boolean;
+  isCreating: boolean;
+  onCreate: (feature: DashboardFeature) => void;
+}) {
+  if (feature.complianceUrl) {
+    return <LinkCell href={feature.complianceUrl} label="Compliance ↗" />;
+  }
+
+  if (!canCreate) {
+    return <p className="text-[12px] text-[#7f859f]">—</p>;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => onCreate(feature)}
+      disabled={isCreating}
+      className="inline-flex h-[26px] items-center justify-center rounded-[8px] border border-[#2f3665] bg-[#1e2349] px-2.5 text-[11px] font-medium text-[#cfd5ff] transition hover:border-[#495293] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {isCreating ? "Creating..." : "Create"}
+    </button>
+  );
+}
+
 function buildMobilePocLabel(feature: DashboardFeature) {
   const parts = [
     feature.androidPoc ? `Android: ${feature.androidPoc}` : null,
@@ -187,7 +218,17 @@ function ToolbarSelect<T extends string>({
   );
 }
 
-function FeatureRow({ feature }: { feature: DashboardFeature }) {
+function FeatureRow({
+  feature,
+  canCreateCompliance,
+  isCreatingCompliance,
+  onCreateCompliance,
+}: {
+  feature: DashboardFeature;
+  canCreateCompliance: boolean;
+  isCreatingCompliance: boolean;
+  onCreateCompliance: (feature: DashboardFeature) => void;
+}) {
   const status = statusMeta[feature.status];
   const priority = priorityMeta[feature.priority];
 
@@ -228,7 +269,12 @@ function FeatureRow({ feature }: { feature: DashboardFeature }) {
       </div>
 
       <div>
-        <LinkCell href={feature.complianceUrl} label="Compliance ↗" />
+        <ComplianceCell
+          feature={feature}
+          canCreate={canCreateCompliance}
+          isCreating={isCreatingCompliance}
+          onCreate={onCreateCompliance}
+        />
       </div>
 
       <div>
@@ -257,6 +303,8 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
   const [prdUrlInput, setPrdUrlInput] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [complianceError, setComplianceError] = useState<string | null>(null);
+  const [creatingComplianceForId, setCreatingComplianceForId] = useState<string | null>(null);
 
   const filteredFeatures = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -339,6 +387,51 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
       setCreateError(error instanceof Error ? error.message : "Unable to create the Meego story.");
     } finally {
       setIsCreating(false);
+    }
+  }
+
+  async function handleCreateCompliance(feature: DashboardFeature) {
+    if (!feature.meegoUrl) {
+      setComplianceError("A Meego story link is required before creating a compliance ticket.");
+      return;
+    }
+
+    setComplianceError(null);
+    setCreatingComplianceForId(feature.id);
+
+    try {
+      const response = await fetch("/api/compliance", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: feature.title,
+          priority: feature.priority,
+          prdUrl: feature.prdUrl,
+          meegoUrl: feature.meegoUrl,
+        }),
+      });
+
+      const payload = (await response.json()) as { error?: string; detailUrl?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to create the compliance ticket.");
+      }
+
+      if (payload.detailUrl) {
+        window.open(payload.detailUrl, "_blank", "noopener,noreferrer");
+      }
+
+      startTransition(() => {
+        router.refresh();
+      });
+    } catch (error) {
+      setComplianceError(
+        error instanceof Error ? error.message : "Unable to create the compliance ticket.",
+      );
+    } finally {
+      setCreatingComplianceForId(null);
     }
   }
 
@@ -426,6 +519,13 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
         </section>
 
         <section className="mt-6 overflow-x-auto rounded-[20px] border border-[#25284b] bg-[#161937] shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
+          {complianceError ? (
+            <div className="border-b border-[#25284b] px-5 py-3">
+              <p className="rounded-[12px] border border-[#8a2e41] bg-[#381723] px-3 py-2 text-[12px] text-[#ff9fb1]">
+                {complianceError}
+              </p>
+            </div>
+          ) : null}
           <div className="min-w-[1480px]">
             <div className="grid grid-cols-[minmax(0,2.05fr)_126px_160px_82px_86px_100px_120px_110px_190px_140px] gap-4 px-5 py-3.5 text-[12px] font-semibold text-[#a0a5ba]">
               <div>Feature</div>
@@ -450,7 +550,15 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
                 </p>
               </div>
             ) : (
-              filteredFeatures.map((feature) => <FeatureRow key={feature.id} feature={feature} />)
+              filteredFeatures.map((feature) => (
+                <FeatureRow
+                  key={feature.id}
+                  feature={feature}
+                  canCreateCompliance={initialData.canCreateCompliance && Boolean(feature.meegoUrl)}
+                  isCreatingCompliance={creatingComplianceForId === feature.id}
+                  onCreateCompliance={handleCreateCompliance}
+                />
+              ))
             )}
           </div>
         </section>

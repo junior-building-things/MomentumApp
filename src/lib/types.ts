@@ -59,5 +59,6 @@ export interface DashboardData {
   summary: DashboardSummaryCard[];
   lastSyncedAt: string | null;
   isLive: boolean;
+  canCreateCompliance: boolean;
   loadError: string | null;
 }

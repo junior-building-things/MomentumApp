@@ -1,4 +1,5 @@
 import { buildFeatureRegistry } from "@/lib/feature-registry";
+import { enrichFeaturesWithCompliance, isLegalConfigured } from "@/lib/legal";
 import { getFeatureStatusesFromMeego } from "@/lib/meego";
 import { DashboardData, DashboardFeature, DashboardSummaryCard, FeatureStatus } from "@/lib/types";
 
@@ -27,15 +28,17 @@ function createSummary(features: DashboardFeature[]): DashboardSummaryCard[] {
 export async function getDashboardData(extraFeatureUrls: string[] = []): Promise<DashboardData> {
   const registry = buildFeatureRegistry(extraFeatureUrls);
   const { features: enriched, error } = await getFeatureStatusesFromMeego(registry);
+  const complianceEnriched = await enrichFeaturesWithCompliance(enriched);
 
-  const liveFeatures = enriched.filter((feature) => feature.isLive);
+  const liveFeatures = complianceEnriched.filter((feature) => feature.isLive);
   const lastSyncedAt = liveFeatures.length > 0 ? new Date().toISOString() : null;
 
   return {
-    features: enriched,
-    summary: createSummary(enriched),
+    features: complianceEnriched,
+    summary: createSummary(complianceEnriched),
     lastSyncedAt,
     isLive: liveFeatures.length > 0,
+    canCreateCompliance: isLegalConfigured(),
     loadError: error,
   };
 }
