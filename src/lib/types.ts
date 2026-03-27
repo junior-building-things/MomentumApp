@@ -32,6 +32,7 @@ export interface DashboardFeature {
   priority: FeaturePriority;
   tasks: FeatureTask[];
   status: FeatureStatus;
+  currentStatusLabel: string;
   meegoState: string | null;
   meegoUrl: string | null;
   lastSyncedAt: string | null;

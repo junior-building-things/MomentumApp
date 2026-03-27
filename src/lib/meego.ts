@@ -194,6 +194,7 @@ function createFeatureFromMarkdown(markdown: string, seed: FeatureSeed): Dashboa
     priority: seed.priority,
     tasks: parseInProgressTasks(markdown),
     status: mapStateToStatus(meegoState ?? undefined, seed.defaultStatus),
+    currentStatusLabel: parseInProgressTasks(markdown)[0]?.label ?? meegoState ?? "Unknown",
     meegoState,
     meegoUrl: seed.meegoUrl ?? null,
     lastSyncedAt: new Date().toISOString(),

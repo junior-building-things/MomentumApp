@@ -24,19 +24,15 @@ import {
 
 const statusMeta = {
   planned: {
-    label: "Planned",
     className: "border-[#343867] bg-[#26294a] text-[#d9dcef]",
   },
   in_progress: {
-    label: "Development",
     className: "border-[#343867] bg-[#26294a] text-[#d9dcef]",
   },
   launched: {
-    label: "Launched",
     className: "border-[#0f6b4d] bg-[#0b3b2f] text-[#18e0a2]",
   },
   at_risk: {
-    label: "At Risk",
     className: "border-[#8a2e41] bg-[#381723] text-[#ff7b98]",
   },
 } as const;
@@ -170,7 +166,7 @@ function FeatureRow({ feature }: { feature: DashboardFeature }) {
         <span
           className={`inline-flex items-center rounded-[8px] border px-3 py-1 text-[13px] font-semibold ${status.className}`}
         >
-          {status.label}
+          {feature.currentStatusLabel}
         </span>
       </div>
 
