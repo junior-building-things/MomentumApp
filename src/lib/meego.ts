@@ -49,6 +49,22 @@ const PLANNED_STATES = new Set([
   "待排期",
 ]);
 
+const ENGLISH_LABEL_MAP: Record<string, string> = {
+  "待评估&排优": "Evaluation & Prioritization",
+  "待开始": "Not Started",
+  "待排期": "Pending Scheduling",
+  "技术评估&排优": "Technical Evaluation & Prioritization",
+  "iOS审核风险排查": "iOS Review Risk Check",
+  "AB实验设计": "A/B Test Design",
+  "合规评估": "Compliance Review",
+  "埋点设计": "Tracking Design",
+  "内容设计&Starling提交": "Content Design & Starling Submission",
+  "进行中": "In Progress",
+  "开发中": "In Development",
+  "处理中": "In Progress",
+  "评估中": "Under Evaluation",
+};
+
 function getEnv() {
   return {
     url: process.env.MEEGO_MCP_URL ?? "https://meego.larkoffice.com/mcp_server/v1",
@@ -91,6 +107,14 @@ function getTextBlocks(result: McpToolResult): string[] {
 
 function extractString(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value : null;
+}
+
+function translateDisplayLabel(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  return ENGLISH_LABEL_MAP[value] ?? value;
 }
 
 function escapeRegExp(value: string) {
@@ -194,8 +218,11 @@ function createFeatureFromMarkdown(markdown: string, seed: FeatureSeed): Dashboa
     priority: seed.priority,
     tasks: parseInProgressTasks(markdown),
     status: mapStateToStatus(meegoState ?? undefined, seed.defaultStatus),
-    currentStatusLabel: parseInProgressTasks(markdown)[0]?.label ?? meegoState ?? "Unknown",
-    meegoState,
+    currentStatusLabel:
+      translateDisplayLabel(parseInProgressTasks(markdown)[0]?.label) ??
+      translateDisplayLabel(meegoState) ??
+      "Unknown",
+    meegoState: translateDisplayLabel(meegoState),
     meegoUrl: seed.meegoUrl ?? null,
     lastSyncedAt: new Date().toISOString(),
     isLive: true,
