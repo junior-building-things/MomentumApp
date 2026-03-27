@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ArrowUpRight,
   Bolt,
   Check,
   ChevronDown,
@@ -24,10 +23,10 @@ import {
 
 const statusMeta = {
   planned: {
-    className: "border-[#343867] bg-[#26294a] text-[#d9dcef]",
+    className: "border-[#4d5670] bg-[#252d3c] text-[#cfd6e4]",
   },
   in_progress: {
-    className: "border-[#343867] bg-[#26294a] text-[#d9dcef]",
+    className: "border-[#c45d1c] bg-[#3b210f] text-[#ffb580]",
   },
   launched: {
     className: "border-[#0f6b4d] bg-[#0b3b2f] text-[#18e0a2]",
@@ -82,10 +81,6 @@ const priorityFilterLabel: Record<"all" | FeaturePriority, string> = {
   p3: "P3",
   tbd: "TBD",
 };
-
-function buildFeatureSubtitle(feature: DashboardFeature) {
-  return feature.description || [feature.team, feature.meegoState].filter(Boolean).join(" • ");
-}
 
 function buildMobilePocLabel(feature: DashboardFeature) {
   const parts = [
@@ -181,17 +176,15 @@ function FeatureRow({ feature }: { feature: DashboardFeature }) {
             href={featureLink}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex max-w-full items-center gap-1.5 text-[14px] font-semibold tracking-[-0.04em] text-white transition hover:text-[#cfd5ff]"
+            className="block truncate text-[14px] font-semibold tracking-[-0.04em] text-white transition hover:text-[#cfd5ff]"
           >
-            <span className="truncate">{feature.title}</span>
-            <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-[#7f859f]" />
+            {feature.title}
           </a>
         ) : (
           <h3 className="truncate text-[14px] font-semibold tracking-[-0.04em] text-white">
             {feature.title}
           </h3>
         )}
-        <p className="mt-1 truncate text-[12px] leading-4 text-[#7f859f]">{buildFeatureSubtitle(feature)}</p>
       </div>
 
       <div>
@@ -358,11 +351,11 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
           <div className="min-w-[1040px]">
             <div className="grid grid-cols-[minmax(0,2.4fr)_150px_180px_86px_190px_140px] gap-4 px-5 py-3.5 text-[12px] font-semibold text-[#a0a5ba]">
               <div>Feature</div>
-              <div>Current Status</div>
+              <div>Status</div>
               <div>Business Line</div>
               <div>Priority</div>
-              <div>Android/iOS POC</div>
-              <div>Server POC</div>
+              <div>Android/iOS</div>
+              <div>Server</div>
             </div>
 
             {filteredFeatures.length === 0 ? (
