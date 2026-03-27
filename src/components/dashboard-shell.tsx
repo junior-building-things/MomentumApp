@@ -1,20 +1,12 @@
 "use client";
 
 import {
-  ArrowUpDown,
-  CalendarDays,
-  CheckCheck,
-  CircleAlert,
-  Ellipsis,
+  ChevronDown,
   Grid2x2,
   LayoutList,
   PencilLine,
   Search,
-  Settings2,
-  Sparkles,
-  TriangleAlert,
-  UserRound,
-  Workflow,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
@@ -22,35 +14,26 @@ import {
   DashboardFeature,
   FeatureFilter,
   FeaturePriority,
-  FeatureSort,
-  FeatureStatus,
-  FeatureViewMode,
 } from "@/lib/types";
 
-const statusMeta: Record<
-  FeatureStatus,
-  {
-    label: string;
-    className: string;
-  }
-> = {
+const statusMeta = {
   planned: {
     label: "Planned",
-    className: "bg-[#eef2ff] text-[#335cff]",
+    className: "border-[#3b3567] bg-[#232244] text-[#d5d7eb]",
   },
   in_progress: {
-    label: "In Progress",
-    className: "bg-[#fff4df] text-[#c97a06]",
+    label: "Development",
+    className: "border-[#3b3567] bg-[#232244] text-[#d5d7eb]",
   },
   launched: {
     label: "Launched",
-    className: "bg-[#e8faef] text-[#0d9b4c]",
+    className: "border-[#0b5e48] bg-[#08382f] text-[#19e1a4]",
   },
   at_risk: {
     label: "At Risk",
-    className: "bg-[#ffe8ec] text-[#da2648]",
+    className: "border-[#7a2b39] bg-[#351924] text-[#ff7c99]",
   },
-};
+} as const;
 
 const priorityMeta: Record<
   FeaturePriority,
@@ -61,42 +44,32 @@ const priorityMeta: Record<
 > = {
   low: {
     label: "Low",
-    className: "bg-[#f3f5f9] text-[#697386]",
+    className: "border-[#46526b] bg-[#252d3c] text-[#aeb7c6]",
   },
   medium: {
     label: "Medium",
-    className: "bg-[#eef2ff] text-[#3653ff]",
+    className: "border-[#1f5fe0] bg-[#14284f] text-[#5aa1ff]",
   },
   high: {
     label: "High",
-    className: "bg-[#111423] text-white",
+    className: "border-[#d45a16] bg-[#3a1d0f] text-[#ff8d47]",
   },
 };
 
-const sortLabel: Record<FeatureSort, string> = {
-  due: "Due Date",
-  priority: "Priority",
-  title: "Title",
-};
-
 const filterLabel: Record<FeatureFilter, string> = {
-  all: "All Statuses",
+  all: "All Status",
   planned: "Planned",
   in_progress: "In Progress",
   launched: "Launched",
   at_risk: "At Risk",
 };
 
-function compareByPriority(priority: FeaturePriority) {
-  switch (priority) {
-    case "high":
-      return 0;
-    case "medium":
-      return 1;
-    case "low":
-      return 2;
-  }
-}
+const priorityFilterLabel: Record<"all" | FeaturePriority, string> = {
+  all: "All Priority",
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+};
 
 function formatDate(date: string) {
   return new Intl.DateTimeFormat("en", {
@@ -118,165 +91,82 @@ function formatSyncLabel(lastSyncedAt: string | null, isLive: boolean) {
   }).format(new Date(lastSyncedAt))}`;
 }
 
-function getProgress(feature: DashboardFeature) {
-  const total = feature.tasks.length;
-  const completed = feature.tasks.filter((task) => task.done).length;
+function buildFeatureDetail(feature: DashboardFeature) {
+  const detailParts = [
+    feature.team,
+    feature.owner,
+    formatDate(feature.dueDate),
+    feature.meegoState,
+    `${feature.tasks.length} task${feature.tasks.length === 1 ? "" : "s"}`,
+  ].filter(Boolean);
 
-  return { total, completed };
+  return detailParts.join(" • ");
 }
 
-function StatCard({
-  label,
+function ToolbarSelect<T extends string>({
+  icon,
   value,
-  tone,
+  onChange,
+  options,
 }: {
-  label: string;
-  value: number;
-  tone: "blue" | "amber" | "green" | "red";
+  icon: React.ReactNode;
+  value: T;
+  onChange: (value: T) => void;
+  options: Record<T, string>;
 }) {
-  const iconMap = {
-    blue: <Workflow className="h-5 w-5" />,
-    amber: <CircleAlert className="h-5 w-5" />,
-    green: <CheckCheck className="h-5 w-5" />,
-    red: <TriangleAlert className="h-5 w-5" />,
-  };
-
-  const toneClass = {
-    blue: "bg-[#eef3ff] text-[#3167ff]",
-    amber: "bg-[#fff2de] text-[#e28709]",
-    green: "bg-[#e8f9ef] text-[#0ca553]",
-    red: "bg-[#ffe7eb] text-[#e63757]",
-  };
-
   return (
-    <div className="rounded-[28px] border border-[var(--border)] bg-white px-6 py-5 shadow-[var(--shadow-sm)]">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-soft)]">
-            {label}
-          </p>
-          <p className="mt-3 text-5xl font-semibold tracking-[-0.05em] text-[var(--text)]">
-            {value}
-          </p>
-        </div>
-        <div
-          className={`flex h-14 w-14 items-center justify-center rounded-full ${toneClass[tone]}`}
-        >
-          {iconMap[tone]}
-        </div>
-      </div>
-    </div>
+    <label className="relative flex h-18 min-w-[250px] items-center rounded-[20px] border border-[#292d57] bg-[#161937] px-5 text-white">
+      <span className="mr-4 text-[#858ba6]">{icon}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value as T)}
+        className="w-full appearance-none bg-transparent pr-10 text-[18px] font-medium text-white outline-none"
+      >
+        {(Object.keys(options) as T[]).map((optionValue) => (
+          <option key={optionValue} value={optionValue} className="bg-[#161937] text-white">
+            {options[optionValue]}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-5 h-5 w-5 text-[#858ba6]" />
+    </label>
   );
 }
 
-function FeatureCard({ feature, viewMode }: { feature: DashboardFeature; viewMode: FeatureViewMode }) {
+function FeatureRow({ feature }: { feature: DashboardFeature }) {
   const status = statusMeta[feature.status];
   const priority = priorityMeta[feature.priority];
-  const progress = getProgress(feature);
-  const cardLayout =
-    viewMode === "grid"
-      ? "min-h-[356px] flex-col"
-      : "md:min-h-[220px] md:flex-row md:items-start md:gap-6";
-
-  const headerLayout = viewMode === "grid" ? "" : "md:min-w-[320px] md:max-w-[360px]";
-  const taskLayout = viewMode === "grid" ? "mt-7" : "mt-7 md:mt-0 md:flex-1";
 
   return (
-    <article
-      className={`flex rounded-[30px] border border-[var(--border)] bg-white p-6 shadow-[var(--shadow-sm)] ${cardLayout}`}
-    >
-      <div className={`flex-1 ${headerLayout}`}>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h3 className="text-[26px] font-semibold tracking-[-0.04em] text-[var(--text)]">
-              {feature.title}
-            </h3>
-            {feature.description ? (
-              <p className="mt-3 max-w-[42ch] text-[15px] leading-7 text-[var(--text-muted)]">
-                {feature.description}
-              </p>
-            ) : null}
-          </div>
-          <button
-            type="button"
-            className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-transparent text-[var(--text-soft)] transition hover:border-[var(--border)] hover:bg-[var(--surface-muted)]"
-            aria-label={`Edit ${feature.title}`}
-          >
-            <PencilLine className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <span className={`rounded-full px-3 py-1.5 text-sm font-semibold ${priority.className}`}>
-            {priority.label}
-          </span>
-          <span className={`rounded-full px-3 py-1.5 text-sm font-semibold ${status.className}`}>
-            {status.label}
-          </span>
-        </div>
-
-        <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3 text-sm text-[var(--text-muted)]">
-          <span className="inline-flex items-center gap-2">
-            <UserRound className="h-4 w-4" />
-            {feature.owner}
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <CalendarDays className="h-4 w-4" />
-            {formatDate(feature.dueDate)}
-          </span>
-        </div>
-
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-[var(--text-soft)]">
-          <span>{feature.team}</span>
-          {feature.meegoState ? (
-            <>
-              <span className="text-[var(--border-strong)]">•</span>
-              <span>{feature.meegoState}</span>
-            </>
-          ) : null}
-        </div>
+    <article className="grid grid-cols-[minmax(0,1.8fr)_220px_180px_48px] items-center gap-6 border-t border-[#25284b] px-10 py-9">
+      <div className="min-w-0">
+        <h3 className="text-[28px] font-semibold tracking-[-0.04em] text-white">{feature.title}</h3>
+        <p className="mt-3 truncate text-[16px] leading-7 text-[#8388a2]">{buildFeatureDetail(feature)}</p>
       </div>
 
-      <div className={taskLayout}>
-        <div className="flex items-center justify-between">
-          <h4 className="text-[20px] font-semibold tracking-[-0.03em] text-[var(--text)]">Tasks</h4>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-[var(--text-soft)]">
-              {progress.completed}/{progress.total}
-            </span>
-            <button
-              type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[var(--text-soft)] transition hover:border-[var(--border)] hover:bg-[var(--surface-muted)]"
-              aria-label={`More options for ${feature.title}`}
-            >
-              <Ellipsis className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-
-        <ul className="mt-5 space-y-4">
-          {feature.tasks.map((task) => (
-            <li key={task.id} className="flex items-start gap-3">
-              <span
-                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border ${
-                  task.done
-                    ? "border-[#111423] bg-[#111423] text-white"
-                    : "border-[var(--border-strong)] bg-white text-transparent"
-                }`}
-              >
-                <CheckCheck className="h-3.5 w-3.5" />
-              </span>
-              <span
-                className={`text-[15px] leading-6 ${
-                  task.done ? "text-[var(--text)]" : "text-[var(--text-muted)]"
-                }`}
-              >
-                {task.label}
-              </span>
-            </li>
-          ))}
-        </ul>
+      <div>
+        <span
+          className={`inline-flex items-center rounded-[10px] border px-5 py-2 text-[18px] font-semibold ${status.className}`}
+        >
+          {status.label}
+        </span>
       </div>
+
+      <div>
+        <span
+          className={`inline-flex items-center rounded-[10px] border px-5 py-2 text-[18px] font-semibold ${priority.className}`}
+        >
+          {priority.label}
+        </span>
+      </div>
+
+      <button
+        type="button"
+        className="flex h-11 w-11 items-center justify-center rounded-[12px] border border-transparent text-[#8b90aa] transition hover:border-[#2d315a] hover:bg-[#171a34] hover:text-white"
+        aria-label={`View ${feature.title}`}
+      >
+        <PencilLine className="h-5 w-5" />
+      </button>
     </article>
   );
 }
@@ -284,214 +174,120 @@ function FeatureCard({ feature, viewMode }: { feature: DashboardFeature; viewMod
 export function DashboardShell({ initialData }: { initialData: DashboardData }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FeatureFilter>("all");
-  const [sort, setSort] = useState<FeatureSort>("due");
-  const [viewMode, setViewMode] = useState<FeatureViewMode>("grid");
-  const [showAddHelp, setShowAddHelp] = useState(false);
+  const [priorityFilter, setPriorityFilter] = useState<"all" | FeaturePriority>("all");
 
   const filteredFeatures = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return [...initialData.features]
-      .filter((feature) => {
-        if (filter !== "all" && feature.status !== filter) {
-          return false;
-        }
+    return initialData.features.filter((feature) => {
+      if (filter !== "all" && feature.status !== filter) {
+        return false;
+      }
 
-        if (!normalizedQuery) {
-          return true;
-        }
+      if (priorityFilter !== "all" && feature.priority !== priorityFilter) {
+        return false;
+      }
 
-        const haystack = [
-          feature.title,
-          feature.description,
-          feature.owner,
-          feature.team,
-          feature.meegoState ?? "",
-        ]
-          .join(" ")
-          .toLowerCase();
+      if (!normalizedQuery) {
+        return true;
+      }
 
-        return haystack.includes(normalizedQuery);
-      })
-      .sort((left, right) => {
-        if (sort === "title") {
-          return left.title.localeCompare(right.title);
-        }
+      const haystack = [
+        feature.title,
+        feature.description,
+        feature.owner,
+        feature.team,
+        feature.meegoState ?? "",
+      ]
+        .join(" ")
+        .toLowerCase();
 
-        if (sort === "priority") {
-          return compareByPriority(left.priority) - compareByPriority(right.priority);
-        }
-
-        return new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime();
-      });
-  }, [filter, initialData.features, query, sort]);
+      return haystack.includes(normalizedQuery);
+    });
+  }, [filter, initialData.features, priorityFilter, query]);
 
   return (
-    <main className="min-h-screen bg-[var(--app-background)] px-4 py-5 text-[var(--text)] sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1440px] rounded-[36px] border border-[var(--border)] bg-[var(--surface-muted)] p-4 sm:p-6">
-        <header className="rounded-[30px] bg-white px-6 py-5 shadow-[var(--shadow-sm)]">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-[var(--accent)] text-white shadow-[0_14px_28px_rgba(91,61,245,0.24)]">
-                <Sparkles className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-[34px] font-semibold tracking-[-0.05em] text-[var(--text)]">
-                  Momentum
-                </h1>
-                <p className="text-[15px] text-[var(--text-muted)]">
-                  Product feature tracker with Meego sync
-                </p>
-              </div>
-            </div>
+    <main className="min-h-screen bg-[#0d1023] px-8 py-6 text-white">
+      <div className="mx-auto max-w-[1980px]">
+        <section className="flex flex-wrap items-center gap-6">
+          <label className="flex h-18 min-w-[390px] flex-1 items-center rounded-[20px] border border-[#292d57] bg-[#161937] px-6 text-[#8b90aa]">
+            <Search className="mr-4 h-6 w-6 shrink-0" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search features..."
+              className="w-full border-none bg-transparent text-[20px] text-white outline-none placeholder:text-[#767d9b]"
+            />
+          </label>
 
+          <ToolbarSelect
+            icon={<SlidersHorizontal className="h-6 w-6" />}
+            value={filter}
+            onChange={setFilter}
+            options={filterLabel}
+          />
+
+          <ToolbarSelect
+            icon={<SlidersHorizontal className="h-6 w-6" />}
+            value={priorityFilter}
+            onChange={setPriorityFilter}
+            options={priorityFilterLabel}
+          />
+
+          <div className="flex h-18 items-center rounded-[20px] border border-[#292d57] bg-[#161937] p-1">
             <button
               type="button"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border)] bg-white text-[var(--text-soft)] transition hover:bg-[var(--surface-muted)]"
-              aria-label="Dashboard settings"
+              className="flex h-16 w-16 items-center justify-center rounded-[16px] text-[#727896] opacity-70"
+              aria-label="Grid view"
             >
-              <Settings2 className="h-5 w-5" />
+              <Grid2x2 className="h-6 w-6" />
+            </button>
+            <button
+              type="button"
+              className="flex h-16 w-16 items-center justify-center rounded-[16px] bg-[#242746] text-white"
+              aria-label="List view"
+            >
+              <LayoutList className="h-6 w-6" />
             </button>
           </div>
 
-          <section className="mt-6 grid gap-4 xl:grid-cols-4">
-            <StatCard label={initialData.summary[0].label} value={initialData.summary[0].value} tone="blue" />
-            <StatCard label={initialData.summary[1].label} value={initialData.summary[1].value} tone="amber" />
-            <StatCard label={initialData.summary[2].label} value={initialData.summary[2].value} tone="green" />
-            <StatCard label={initialData.summary[3].label} value={initialData.summary[3].value} tone="red" />
-          </section>
-
-          <section className="mt-5 flex flex-col gap-3 xl:flex-row xl:items-center">
-            <label className="flex h-14 flex-1 items-center gap-3 rounded-[18px] border border-transparent bg-[var(--surface-muted)] px-4 text-[var(--text-muted)] transition focus-within:border-[var(--border-strong)]">
-              <Search className="h-4 w-4 shrink-0" />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search features..."
-                className="w-full border-none bg-transparent text-[15px] text-[var(--text)] outline-none placeholder:text-[var(--text-soft)]"
-              />
-            </label>
-
-            <div className="flex flex-col gap-3 sm:flex-row xl:flex-nowrap">
-              <label className="flex h-14 min-w-[170px] items-center gap-3 rounded-[18px] bg-white px-4 text-[var(--text-muted)] shadow-[var(--shadow-sm)]">
-                <Workflow className="h-4 w-4" />
-                <select
-                  value={filter}
-                  onChange={(event) => setFilter(event.target.value as FeatureFilter)}
-                  className="w-full appearance-none bg-transparent text-[15px] font-medium text-[var(--text)] outline-none"
-                >
-                  {Object.entries(filterLabel).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="flex h-14 min-w-[150px] items-center gap-3 rounded-[18px] bg-white px-4 text-[var(--text-muted)] shadow-[var(--shadow-sm)]">
-                <ArrowUpDown className="h-4 w-4" />
-                <select
-                  value={sort}
-                  onChange={(event) => setSort(event.target.value as FeatureSort)}
-                  className="w-full appearance-none bg-transparent text-[15px] font-medium text-[var(--text)] outline-none"
-                >
-                  {Object.entries(sortLabel).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <div className="flex rounded-[18px] bg-[var(--surface-strong)] p-1 text-white shadow-[var(--shadow-sm)]">
-                <button
-                  type="button"
-                  onClick={() => setViewMode("grid")}
-                  className={`flex h-12 w-12 items-center justify-center rounded-[14px] transition ${
-                    viewMode === "grid" ? "bg-[#1d2134]" : "opacity-70 hover:opacity-100"
-                  }`}
-                  aria-label="Grid view"
-                >
-                  <Grid2x2 className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode("list")}
-                  className={`flex h-12 w-12 items-center justify-center rounded-[14px] transition ${
-                    viewMode === "list" ? "bg-[#1d2134]" : "opacity-70 hover:opacity-100"
-                  }`}
-                  aria-label="List view"
-                >
-                  <LayoutList className="h-4 w-4" />
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowAddHelp(true)}
-                className="inline-flex h-14 items-center justify-center rounded-[18px] bg-[var(--surface-strong)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-sm)] transition hover:bg-[#1c2133]"
-              >
-                Add Meego Story
-              </button>
-            </div>
-          </section>
-        </header>
-
-        <section className="mt-5 flex items-center justify-between px-1">
-          <div>
-            <p className="text-sm font-medium text-[var(--text-muted)]">
-              {filteredFeatures.length} feature{filteredFeatures.length === 1 ? "" : "s"}
-            </p>
-          </div>
-          <p className="text-sm text-[var(--text-soft)]">
-            {formatSyncLabel(initialData.lastSyncedAt, initialData.isLive)}
-          </p>
+          <button
+            type="button"
+            className="inline-flex h-18 items-center justify-center rounded-[20px] bg-white px-8 text-[20px] font-semibold text-black transition hover:bg-[#f1f3f8]"
+          >
+            Add Feature
+          </button>
         </section>
 
-        <section
-          className={`mt-4 grid gap-4 ${
-            viewMode === "grid" ? "xl:grid-cols-3" : "grid-cols-1"
-          }`}
-        >
+        <section className="mt-8 overflow-hidden rounded-[28px] border border-[#25284b] bg-[#161937] shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
+          <div className="grid grid-cols-[minmax(0,1.8fr)_220px_180px_48px] gap-6 px-10 py-7 text-[18px] font-semibold text-[#a0a5ba]">
+            <div>Feature</div>
+            <div>Current Status</div>
+            <div>Risk</div>
+            <div />
+          </div>
+
           {filteredFeatures.length === 0 ? (
-            <div className="col-span-full rounded-[30px] border border-[var(--border)] bg-white p-8 text-center shadow-[var(--shadow-sm)]">
-              <h3 className="text-[24px] font-semibold tracking-[-0.04em] text-[var(--text)]">
+            <div className="border-t border-[#25284b] px-10 py-14">
+              <h3 className="text-[28px] font-semibold tracking-[-0.04em] text-white">
                 No live Meego stories loaded
               </h3>
-              <p className="mt-3 text-[15px] leading-7 text-[var(--text-muted)]">
-                {initialData.loadError ??
-                  "Add valid Meego story URLs and make sure the MCP token is configured on the server."}
+              <p className="mt-3 text-[17px] leading-7 text-[#848aa4]">
+                {initialData.loadError ?? "Try changing the filters or search term."}
               </p>
             </div>
-          ) : null}
-          {filteredFeatures.map((feature) => (
-            <FeatureCard key={feature.id} feature={feature} viewMode={viewMode} />
-          ))}
+          ) : (
+            filteredFeatures.map((feature) => <FeatureRow key={feature.id} feature={feature} />)
+          )}
         </section>
-      </div>
 
-      {showAddHelp ? (
-        <div className="fixed inset-0 z-20 flex items-center justify-center bg-[#0f122280] p-4">
-          <div className="w-full max-w-lg rounded-[30px] bg-white p-7 shadow-[0_28px_70px_rgba(17,19,34,0.18)]">
-            <h2 className="text-[28px] font-semibold tracking-[-0.04em] text-[var(--text)]">
-              Add Meego Story
-            </h2>
-            <p className="mt-4 text-[15px] leading-7 text-[var(--text-muted)]">
-              Add a real Meego story URL in `src/lib/feature-registry.ts`. The app now loads cards
-              only from live Meego MCP responses and no longer falls back to mock feature metadata.
-            </p>
-            <div className="mt-6 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setShowAddHelp(false)}
-                className="inline-flex h-12 items-center justify-center rounded-[16px] border border-[var(--border)] px-4 text-sm font-semibold text-[var(--text-muted)]"
-              >
-                Close
-              </button>
-            </div>
-          </div>
+        <div className="mt-5 flex items-center justify-between px-1 text-[16px] text-[#7f859f]">
+          <p>
+            {filteredFeatures.length} feature{filteredFeatures.length === 1 ? "" : "s"}
+          </p>
+          <p>{formatSyncLabel(initialData.lastSyncedAt, initialData.isLive)}</p>
         </div>
-      ) : null}
+      </div>
     </main>
   );
 }
