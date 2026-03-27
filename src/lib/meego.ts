@@ -65,6 +65,16 @@ const ENGLISH_LABEL_MAP: Record<string, string> = {
   "评估中": "Under Evaluation",
 };
 
+const PREFERRED_CURRENT_NODES = [
+  "PRD Preparation",
+  "Product Line Review",
+  "Assessment & Prioritization",
+  "Detailed PRD Review",
+  "Tech Solution Design",
+  "iOS Dev",
+  "UI&UX Acceptance",
+];
+
 function getEnv() {
   return {
     url: process.env.MEEGO_MCP_URL ?? "https://meego.larkoffice.com/mcp_server/v1",
@@ -196,6 +206,20 @@ function parseInProgressTasks(markdown: string): FeatureTask[] {
   }));
 }
 
+function chooseCurrentStatusLabel(tasks: FeatureTask[], meegoState: string | null): string {
+  const translatedTasks = tasks
+    .map((task) => translateDisplayLabel(task.label))
+    .filter((label): label is string => Boolean(label));
+
+  for (const preferredNode of PREFERRED_CURRENT_NODES) {
+    if (translatedTasks.includes(preferredNode)) {
+      return preferredNode;
+    }
+  }
+
+  return translatedTasks[0] ?? translateDisplayLabel(meegoState) ?? "Unknown";
+}
+
 function createFeatureFromMarkdown(markdown: string, seed: FeatureSeed): DashboardFeature | null {
   const title = extractMarkdownTableValue(markdown, "工作项名称");
   const meegoState = extractMarkdownTableValue(markdown, "工作项状态");
@@ -203,6 +227,7 @@ function createFeatureFromMarkdown(markdown: string, seed: FeatureSeed): Dashboa
   const rawRoles = extractMarkdownTableValue(markdown, "角色成员");
   const updatedAt =
     extractMarkdownTableValue(markdown, "更新时间") ?? extractMarkdownTableValue(markdown, "创建时间");
+  const tasks = parseInProgressTasks(markdown);
 
   if (!title || !updatedAt) {
     return null;
@@ -216,12 +241,9 @@ function createFeatureFromMarkdown(markdown: string, seed: FeatureSeed): Dashboa
     owner: parseOwnerFromRoles(rawRoles) ?? "Unknown Owner",
     dueDate: updatedAt,
     priority: seed.priority,
-    tasks: parseInProgressTasks(markdown),
+    tasks,
     status: mapStateToStatus(meegoState ?? undefined, seed.defaultStatus),
-    currentStatusLabel:
-      translateDisplayLabel(parseInProgressTasks(markdown)[0]?.label) ??
-      translateDisplayLabel(meegoState) ??
-      "Unknown",
+    currentStatusLabel: chooseCurrentStatusLabel(tasks, meegoState),
     meegoState: translateDisplayLabel(meegoState),
     meegoUrl: seed.meegoUrl ?? null,
     lastSyncedAt: new Date().toISOString(),
