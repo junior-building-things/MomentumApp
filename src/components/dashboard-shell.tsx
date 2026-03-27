@@ -191,9 +191,11 @@ function FeatureCard({ feature, viewMode }: { feature: DashboardFeature; viewMod
             <h3 className="text-[26px] font-semibold tracking-[-0.04em] text-[var(--text)]">
               {feature.title}
             </h3>
-            <p className="mt-3 max-w-[42ch] text-[15px] leading-7 text-[var(--text-muted)]">
-              {feature.description}
-            </p>
+            {feature.description ? (
+              <p className="mt-3 max-w-[42ch] text-[15px] leading-7 text-[var(--text-muted)]">
+                {feature.description}
+              </p>
+            ) : null}
           </div>
           <button
             type="button"

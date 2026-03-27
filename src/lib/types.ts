@@ -24,6 +24,7 @@ export interface FeatureDefinition {
   defaultStatus: FeatureStatus;
   priority: FeaturePriority;
   meegoIssueId?: string;
+  meegoUrl?: string | null;
   tasks: FeatureTask[];
 }
 
