@@ -53,7 +53,16 @@ const ENGLISH_LABEL_MAP: Record<string, string> = {
   "待评估&排优": "Evaluation & Prioritization",
   "待开始": "Not Started",
   "待排期": "Pending Scheduling",
+  "产品需求准备": "PRD Preparation",
+  "产品线内初评": "Product Line Review",
   "技术评估&排优": "Technical Evaluation & Prioritization",
+  "需求详评": "Detailed PRD Review",
+  "技术方案设计": "Tech Solution Design",
+  "iOS 开发": "iOS Dev",
+  "UI&UX验收": "UI&UX Acceptance",
+  "Server上线": "Server Launch",
+  "AB实验": "A/B Test",
+  "结束": "Completed",
   "iOS审核风险排查": "iOS Review Risk Check",
   "AB实验设计": "A/B Test Design",
   "合规评估": "Compliance Review",
@@ -66,13 +75,16 @@ const ENGLISH_LABEL_MAP: Record<string, string> = {
 };
 
 const PREFERRED_CURRENT_NODES = [
-  "PRD Preparation",
-  "Product Line Review",
-  "Assessment & Prioritization",
-  "Detailed PRD Review",
-  "Tech Solution Design",
-  "iOS Dev",
-  "UI&UX Acceptance",
+  "产品需求准备",
+  "产品线内初评",
+  "技术评估&排优",
+  "需求详评",
+  "技术方案设计",
+  "iOS 开发",
+  "UI&UX验收",
+  "Server上线",
+  "AB实验",
+  "结束",
 ];
 
 function getEnv() {
@@ -207,17 +219,19 @@ function parseInProgressTasks(markdown: string): FeatureTask[] {
 }
 
 function chooseCurrentStatusLabel(tasks: FeatureTask[], meegoState: string | null): string {
-  const translatedTasks = tasks
-    .map((task) => translateDisplayLabel(task.label))
-    .filter((label): label is string => Boolean(label));
+  const rawTaskLabels = tasks.map((task) => task.label).filter(Boolean);
 
   for (const preferredNode of PREFERRED_CURRENT_NODES) {
-    if (translatedTasks.includes(preferredNode)) {
-      return preferredNode;
+    if (rawTaskLabels.includes(preferredNode)) {
+      return translateDisplayLabel(preferredNode) ?? preferredNode;
     }
   }
 
-  return translatedTasks[0] ?? translateDisplayLabel(meegoState) ?? "Unknown";
+  return (
+    translateDisplayLabel(rawTaskLabels[0]) ??
+    translateDisplayLabel(meegoState) ??
+    "Unknown"
+  );
 }
 
 function createFeatureFromMarkdown(markdown: string, seed: FeatureSeed): DashboardFeature | null {
