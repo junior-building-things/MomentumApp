@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ArrowUpRight,
   Bolt,
   Check,
   ChevronDown,
@@ -10,7 +11,6 @@ import {
   LayoutList,
   Moon,
   Package,
-  PencilLine,
   Search,
   SlidersHorizontal,
 } from "lucide-react";
@@ -44,17 +44,25 @@ const priorityMeta: Record<
     className: string;
   }
 > = {
-  low: {
-    label: "Low",
+  p0: {
+    label: "P0",
+    className: "border-[#a83446] bg-[#371822] text-[#ff7b8f]",
+  },
+  p1: {
+    label: "P1",
+    className: "border-[#c45d1c] bg-[#3b210f] text-[#ff9c54]",
+  },
+  p2: {
+    label: "P2",
+    className: "border-[#245ede] bg-[#16284c] text-[#65a3ff]",
+  },
+  p3: {
+    label: "P3",
     className: "border-[#46526b] bg-[#252d3c] text-[#aeb7c6]",
   },
-  medium: {
-    label: "Medium",
-    className: "border-[#1f5fe0] bg-[#14284f] text-[#5aa1ff]",
-  },
-  high: {
-    label: "High",
-    className: "border-[#d45a16] bg-[#3a1d0f] text-[#ff8d47]",
+  tbd: {
+    label: "TBD",
+    className: "border-[#555b72] bg-[#262b3c] text-[#c2c7d3]",
   },
 };
 
@@ -68,13 +76,15 @@ const filterLabel: Record<FeatureFilter, string> = {
 
 const priorityFilterLabel: Record<"all" | FeaturePriority, string> = {
   all: "All Priority",
-  low: "Low",
-  medium: "Medium",
-  high: "High",
+  p0: "P0",
+  p1: "P1",
+  p2: "P2",
+  p3: "P3",
+  tbd: "TBD",
 };
 
 function buildFeatureSubtitle(feature: DashboardFeature) {
-  return feature.description || [feature.team, feature.owner, feature.meegoState].filter(Boolean).join(" • ");
+  return feature.description || [feature.team, feature.meegoState].filter(Boolean).join(" • ");
 }
 
 function SummaryCard({
@@ -101,16 +111,16 @@ function SummaryCard({
   };
 
   return (
-    <div className="rounded-[20px] border border-[#25284b] bg-[#161937] px-6 py-6">
-      <div className="flex items-start justify-between gap-6">
+    <div className="rounded-[18px] border border-[#25284b] bg-[#161937] px-5 py-4.5">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[14px] font-medium text-[#9aa0b6]">{label}</p>
-          <p className="mt-2.5 text-[42px] font-semibold leading-none tracking-[-0.06em] text-white">
+          <p className="text-[13px] font-medium text-[#9aa0b6]">{label}</p>
+          <p className="mt-2 text-[34px] font-semibold leading-none tracking-[-0.06em] text-white">
             {value}
           </p>
         </div>
         <div
-          className={`flex h-12 w-12 items-center justify-center rounded-full ${classes[tone]}`}
+          className={`flex h-10 w-10 items-center justify-center rounded-full ${classes[tone]}`}
         >
           {icons[tone]}
         </div>
@@ -131,12 +141,12 @@ function ToolbarSelect<T extends string>({
   options: Record<T, string>;
 }) {
   return (
-    <label className="relative flex h-[46px] w-[210px] items-center rounded-[14px] border border-[#292d57] bg-[#161937] px-3.5 text-white">
-      <span className="mr-4 text-[#858ba6]">{icon}</span>
+    <label className="relative flex h-[40px] w-[176px] items-center rounded-[12px] border border-[#292d57] bg-[#161937] px-3 text-white">
+      <span className="mr-3 text-[#858ba6]">{icon}</span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value as T)}
-        className="w-full appearance-none bg-transparent pr-9 text-[14px] font-medium text-white outline-none"
+        className="w-full appearance-none bg-transparent pr-8 text-[13px] font-medium text-white outline-none"
       >
         {(Object.keys(options) as T[]).map((optionValue) => (
           <option key={optionValue} value={optionValue} className="bg-[#161937] text-white">
@@ -144,7 +154,7 @@ function ToolbarSelect<T extends string>({
           </option>
         ))}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-4 h-4 w-4 text-[#858ba6]" />
+      <ChevronDown className="pointer-events-none absolute right-3.5 h-4 w-4 text-[#858ba6]" />
     </label>
   );
 }
@@ -152,39 +162,56 @@ function ToolbarSelect<T extends string>({
 function FeatureRow({ feature }: { feature: DashboardFeature }) {
   const status = statusMeta[feature.status];
   const priority = priorityMeta[feature.priority];
+  const featureLink = feature.prdUrl ?? feature.meegoUrl;
 
   return (
-    <article className="grid grid-cols-[minmax(0,1.9fr)_170px_130px_36px] items-center gap-5 border-t border-[#25284b] px-6 py-5">
+    <article className="grid grid-cols-[minmax(0,2.2fr)_160px_190px_86px_120px_72px] items-center gap-4 border-t border-[#25284b] px-5 py-3.5">
       <div className="min-w-0">
-        <h3 className="text-[16px] font-semibold tracking-[-0.04em] text-white">{feature.title}</h3>
-        <p className="mt-1 truncate text-[13px] leading-5 text-[#7f859f]">
-          {buildFeatureSubtitle(feature)}
-        </p>
+        {featureLink ? (
+          <a
+            href={featureLink}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex max-w-full items-center gap-1.5 text-[14px] font-semibold tracking-[-0.04em] text-white transition hover:text-[#cfd5ff]"
+          >
+            <span className="truncate">{feature.title}</span>
+            <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-[#7f859f]" />
+          </a>
+        ) : (
+          <h3 className="truncate text-[14px] font-semibold tracking-[-0.04em] text-white">
+            {feature.title}
+          </h3>
+        )}
+        <p className="mt-1 truncate text-[12px] leading-4 text-[#7f859f]">{buildFeatureSubtitle(feature)}</p>
       </div>
 
       <div>
         <span
-          className={`inline-flex items-center rounded-[8px] border px-3 py-1 text-[13px] font-semibold ${status.className}`}
+          className={`inline-flex items-center rounded-[8px] border px-2.5 py-1 text-[11px] font-semibold ${status.className}`}
         >
           {feature.currentStatusLabel}
         </span>
       </div>
 
       <div>
+        <p className="truncate text-[12px] text-[#b7bbca]">{feature.businessLine ?? "—"}</p>
+      </div>
+
+      <div>
         <span
-          className={`inline-flex items-center rounded-[8px] border px-3 py-1 text-[13px] font-semibold ${priority.className}`}
+          className={`inline-flex items-center rounded-[8px] border px-2.5 py-1 text-[11px] font-semibold ${priority.className}`}
         >
-          {priority.label}
+          {feature.priorityLabel || priority.label}
         </span>
       </div>
 
-      <button
-        type="button"
-        className="flex h-8 w-8 items-center justify-center rounded-[9px] border border-transparent text-[#7f859f] transition hover:border-[#2f335f] hover:bg-[#191c37] hover:text-white"
-        aria-label={`Edit ${feature.title}`}
-      >
-        <PencilLine className="h-4 w-4" />
-      </button>
+      <div>
+        <p className="truncate text-[12px] text-[#b7bbca]">{feature.owner}</p>
+      </div>
+
+      <div>
+        <p className="text-[12px] text-[#b7bbca]">{feature.quarter ?? "—"}</p>
+      </div>
     </article>
   );
 }
@@ -215,6 +242,9 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
         feature.description,
         feature.owner,
         feature.team,
+        feature.businessLine ?? "",
+        feature.priorityLabel,
+        feature.quarter ?? "",
         feature.meegoState ?? "",
       ]
         .join(" ")
@@ -228,7 +258,7 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
     total: initialData.features.length,
     inProgress: initialData.features.filter((feature) => feature.status === "in_progress").length,
     launched: initialData.features.filter((feature) => feature.status === "launched").length,
-    critical: initialData.features.filter((feature) => feature.priority === "high").length,
+    critical: initialData.features.filter((feature) => feature.priority === "p0").length,
   };
 
   return (
@@ -264,41 +294,41 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
         </section>
 
         <section className="mt-6 flex flex-wrap items-center gap-3">
-          <label className="flex h-[46px] w-[250px] items-center rounded-[14px] border border-[#292d57] bg-[#161937] px-3.5 text-[#8b90aa]">
-            <Search className="mr-3 h-5 w-5 shrink-0" />
+          <label className="flex h-[40px] w-[214px] items-center rounded-[12px] border border-[#292d57] bg-[#161937] px-3 text-[#8b90aa]">
+            <Search className="mr-2.5 h-4.5 w-4.5 shrink-0" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search features..."
-              className="w-full border-none bg-transparent text-[14px] text-white outline-none placeholder:text-[#767d9b]"
+              className="w-full border-none bg-transparent text-[13px] text-white outline-none placeholder:text-[#767d9b]"
             />
           </label>
 
           <ToolbarSelect
-            icon={<SlidersHorizontal className="h-6 w-6" />}
+            icon={<SlidersHorizontal className="h-5 w-5" />}
             value={filter}
             onChange={setFilter}
             options={filterLabel}
           />
 
           <ToolbarSelect
-            icon={<SlidersHorizontal className="h-6 w-6" />}
+            icon={<SlidersHorizontal className="h-5 w-5" />}
             value={priorityFilter}
             onChange={setPriorityFilter}
             options={priorityFilterLabel}
           />
 
-          <div className="flex h-[46px] items-center overflow-hidden rounded-[14px] border border-[#292d57] bg-[#161937]">
+          <div className="flex h-[40px] items-center overflow-hidden rounded-[12px] border border-[#292d57] bg-[#161937]">
             <button
               type="button"
-              className="flex h-full w-[46px] items-center justify-center text-[#747a96]"
+              className="flex h-full w-[40px] items-center justify-center text-[#747a96]"
               aria-label="Grid view"
             >
               <Grid2x2 className="h-4.5 w-4.5" />
             </button>
             <button
               type="button"
-              className="flex h-full w-[46px] items-center justify-center bg-[#242746] text-white"
+              className="flex h-full w-[40px] items-center justify-center bg-[#242746] text-white"
               aria-label="List view"
             >
               <LayoutList className="h-4.5 w-4.5" />
@@ -307,32 +337,36 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
 
           <button
             type="button"
-            className="inline-flex h-[46px] items-center justify-center rounded-[14px] bg-white px-6 text-[14px] font-semibold text-black transition hover:bg-[#f2f3f8]"
+            className="inline-flex h-[40px] items-center justify-center rounded-[12px] bg-white px-5 text-[13px] font-semibold text-black transition hover:bg-[#f2f3f8]"
           >
             Add Feature
           </button>
         </section>
 
-        <section className="mt-6 overflow-hidden rounded-[22px] border border-[#25284b] bg-[#161937] shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
-          <div className="grid grid-cols-[minmax(0,1.9fr)_170px_130px_36px] gap-5 px-6 py-4 text-[13px] font-semibold text-[#a0a5ba]">
-            <div>Feature</div>
-            <div>Current Status</div>
-            <div>Risk</div>
-            <div />
-          </div>
-
-          {filteredFeatures.length === 0 ? (
-            <div className="border-t border-[#25284b] px-9 py-14">
-              <h3 className="text-[18px] font-semibold tracking-[-0.04em] text-white">
-                No live Meego stories loaded
-              </h3>
-              <p className="mt-3 text-[13px] leading-6 text-[#848aa4]">
-                {initialData.loadError ?? "Try changing the filters or search term."}
-              </p>
+        <section className="mt-6 overflow-x-auto rounded-[20px] border border-[#25284b] bg-[#161937] shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
+          <div className="min-w-[980px]">
+            <div className="grid grid-cols-[minmax(0,2.2fr)_160px_190px_86px_120px_72px] gap-4 px-5 py-3.5 text-[12px] font-semibold text-[#a0a5ba]">
+              <div>Feature</div>
+              <div>Current Status</div>
+              <div>Business Line</div>
+              <div>Priority</div>
+              <div>PM</div>
+              <div>Quarter</div>
             </div>
-          ) : (
-            filteredFeatures.map((feature) => <FeatureRow key={feature.id} feature={feature} />)
-          )}
+
+            {filteredFeatures.length === 0 ? (
+              <div className="border-t border-[#25284b] px-7 py-12">
+                <h3 className="text-[16px] font-semibold tracking-[-0.04em] text-white">
+                  No live Meego stories loaded
+                </h3>
+                <p className="mt-2 text-[12px] leading-5 text-[#848aa4]">
+                  {initialData.loadError ?? "Try changing the filters or search term."}
+                </p>
+              </div>
+            ) : (
+              filteredFeatures.map((feature) => <FeatureRow key={feature.id} feature={feature} />)
+            )}
+          </div>
         </section>
       </div>
     </main>

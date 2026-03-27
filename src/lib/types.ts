@@ -1,6 +1,6 @@
 export type FeatureStatus = "planned" | "in_progress" | "launched" | "at_risk";
 
-export type FeaturePriority = "low" | "medium" | "high";
+export type FeaturePriority = "p0" | "p1" | "p2" | "p3" | "tbd";
 
 export type FeatureViewMode = "grid" | "list";
 
@@ -27,14 +27,18 @@ export interface DashboardFeature {
   title: string;
   description: string;
   team: string;
+  businessLine: string | null;
   owner: string;
+  quarter: string | null;
   dueDate: string;
   priority: FeaturePriority;
+  priorityLabel: string;
   tasks: FeatureTask[];
   status: FeatureStatus;
   currentStatusLabel: string;
   meegoState: string | null;
   meegoUrl: string | null;
+  prdUrl: string | null;
   lastSyncedAt: string | null;
   isLive: boolean;
 }

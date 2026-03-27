@@ -1,6 +1,12 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { DashboardFeature, FeatureSeed, FeatureStatus, FeatureTask } from "@/lib/types";
+import {
+  DashboardFeature,
+  FeaturePriority,
+  FeatureSeed,
+  FeatureStatus,
+  FeatureTask,
+} from "@/lib/types";
 
 interface McpTextContent {
   type: "text";
@@ -87,6 +93,14 @@ const PREFERRED_CURRENT_NODES = [
   "结束",
 ];
 
+const PRIORITY_MAP: Record<string, FeaturePriority> = {
+  P0: "p0",
+  P1: "p1",
+  P2: "p2",
+  P3: "p3",
+  待定: "tbd",
+};
+
 function getEnv() {
   return {
     url: process.env.MEEGO_MCP_URL ?? "https://meego.larkoffice.com/mcp_server/v1",
@@ -139,6 +153,18 @@ function translateDisplayLabel(value: string | null | undefined): string | null 
   return ENGLISH_LABEL_MAP[value] ?? value;
 }
 
+function formatFallbackPriorityLabel(priority: FeaturePriority): string {
+  return priority.toUpperCase();
+}
+
+function mapPriority(rawPriority: string | null, fallback: FeaturePriority): FeaturePriority {
+  if (!rawPriority) {
+    return fallback;
+  }
+
+  return PRIORITY_MAP[rawPriority.trim().toUpperCase()] ?? PRIORITY_MAP[rawPriority.trim()] ?? fallback;
+}
+
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -146,6 +172,28 @@ function escapeRegExp(value: string) {
 function extractMarkdownTableValue(markdown: string, key: string): string | null {
   const pattern = new RegExp(`\\|\\s*${escapeRegExp(key)}\\s*\\|\\s*(.*?)\\s*\\|`);
   const match = markdown.match(pattern);
+  return match?.[1]?.trim() ?? null;
+}
+
+function extractMarkdownFieldValue(markdown: string, key: string): string | null {
+  const marker = "# 工作项字段";
+  const start = markdown.indexOf(marker);
+
+  if (start === -1) {
+    return null;
+  }
+
+  const section = markdown
+    .slice(start + marker.length)
+    .split("# 进行中的节点")[0]
+    ?.trim();
+
+  if (!section) {
+    return null;
+  }
+
+  const pattern = new RegExp(`\\|\\s*${escapeRegExp(key)}\\s*\\|\\s*(.*?)\\s*\\|`);
+  const match = section.match(pattern);
   return match?.[1]?.trim() ?? null;
 }
 
@@ -218,6 +266,34 @@ function parseInProgressTasks(markdown: string): FeatureTask[] {
   }));
 }
 
+function parseTagValues(rawTags: string | null): string[] {
+  if (!rawTags) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(rawTags) as unknown;
+
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((value) => (typeof value === "string" ? value.trim() : ""))
+        .filter(Boolean);
+    }
+  } catch {
+    return rawTags
+      .split(/[;,，]/)
+      .map((value) => value.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function extractQuarter(rawTags: string | null): string | null {
+  const quarterTag = parseTagValues(rawTags).find((tag) => /(?:20\d{2}[- ]?)?Q[1-4]/i.test(tag));
+  return quarterTag ?? null;
+}
+
 function chooseCurrentStatusLabel(tasks: FeatureTask[], meegoState: string | null): string {
   const rawTaskLabels = tasks.map((task) => task.label).filter(Boolean);
 
@@ -239,6 +315,10 @@ function createFeatureFromMarkdown(markdown: string, seed: FeatureSeed): Dashboa
   const meegoState = extractMarkdownTableValue(markdown, "工作项状态");
   const rawProject = extractMarkdownTableValue(markdown, "所属空间");
   const rawRoles = extractMarkdownTableValue(markdown, "角色成员");
+  const rawBusinessLine = extractMarkdownFieldValue(markdown, "业务线");
+  const rawPriority = extractMarkdownFieldValue(markdown, "优先级");
+  const rawPrdUrl = extractMarkdownFieldValue(markdown, "PRD");
+  const rawTags = extractMarkdownFieldValue(markdown, "标签");
   const updatedAt =
     extractMarkdownTableValue(markdown, "更新时间") ?? extractMarkdownTableValue(markdown, "创建时间");
   const tasks = parseInProgressTasks(markdown);
@@ -252,14 +332,18 @@ function createFeatureFromMarkdown(markdown: string, seed: FeatureSeed): Dashboa
     title,
     description: "",
     team: parseTeamFromProject(rawProject) ?? "Unknown Team",
+    businessLine: rawBusinessLine,
     owner: parseOwnerFromRoles(rawRoles) ?? "Unknown Owner",
+    quarter: extractQuarter(rawTags),
     dueDate: updatedAt,
-    priority: seed.priority,
+    priority: mapPriority(rawPriority, seed.priority),
+    priorityLabel: rawPriority ?? formatFallbackPriorityLabel(seed.priority),
     tasks,
     status: mapStateToStatus(meegoState ?? undefined, seed.defaultStatus),
     currentStatusLabel: chooseCurrentStatusLabel(tasks, meegoState),
     meegoState: translateDisplayLabel(meegoState),
     meegoUrl: seed.meegoUrl ?? null,
+    prdUrl: rawPrdUrl ?? null,
     lastSyncedAt: new Date().toISOString(),
     isLive: true,
   };
@@ -297,7 +381,7 @@ async function getFeatureWithClient(
 
   try {
     const args: Record<string, unknown> = {
-      fields: ["work_item_status"],
+      fields: ["work_item_status", "business", "priority", "PRD", "tags"],
     };
 
     if (seed.meegoUrl) {
