@@ -22,4 +22,11 @@ export const featureRegistry: FeatureSeed[] = [
     meegoIssueId: "6970402572",
     meegoUrl: "https://meego.larkoffice.com/tiktok/story/detail/6970402572",
   },
+  {
+    id: "story-6864333123",
+    priority: "p2",
+    defaultStatus: "planned",
+    meegoIssueId: "6864333123",
+    meegoUrl: "https://meego.larkoffice.com/tiktok/story/detail/6864333123",
+  },
 ];
