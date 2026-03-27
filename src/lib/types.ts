@@ -14,21 +14,23 @@ export interface FeatureTask {
   done: boolean;
 }
 
-export interface FeatureDefinition {
+export interface FeatureSeed {
+  id: string;
+  priority: FeaturePriority;
+  defaultStatus: FeatureStatus;
+  meegoIssueId?: string;
+  meegoUrl?: string | null;
+}
+
+export interface DashboardFeature {
   id: string;
   title: string;
   description: string;
   team: string;
   owner: string;
   dueDate: string;
-  defaultStatus: FeatureStatus;
   priority: FeaturePriority;
-  meegoIssueId?: string;
-  meegoUrl?: string | null;
   tasks: FeatureTask[];
-}
-
-export interface DashboardFeature extends Omit<FeatureDefinition, "defaultStatus"> {
   status: FeatureStatus;
   meegoState: string | null;
   meegoUrl: string | null;
@@ -47,4 +49,5 @@ export interface DashboardData {
   summary: DashboardSummaryCard[];
   lastSyncedAt: string | null;
   isLive: boolean;
+  loadError: string | null;
 }

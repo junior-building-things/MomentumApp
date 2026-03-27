@@ -1,6 +1,6 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { DashboardFeature, FeatureDefinition, FeatureStatus } from "@/lib/types";
+import { DashboardFeature, FeatureSeed, FeatureStatus, FeatureTask } from "@/lib/types";
 
 interface McpTextContent {
   type: "text";
@@ -12,18 +12,14 @@ interface McpToolResult {
   isError?: boolean;
 }
 
-interface MeegoStatusResult {
-  title?: string;
-  description?: string;
-  team?: string;
-  owner?: string;
-  dueDate?: string;
-  tasks?: FeatureDefinition["tasks"];
-  status: FeatureStatus;
-  meegoState: string | null;
-  meegoUrl: string | null;
-  lastSyncedAt: string | null;
-  isLive: boolean;
+interface MeegoFetchResult {
+  feature: DashboardFeature | null;
+  error?: string | null;
+}
+
+interface MeegoCollectionResult {
+  features: DashboardFeature[];
+  error: string | null;
 }
 
 const LAUNCHED_STATES = new Set(["CLOSED", "DONE", "RESOLVED", "RELEASED", "LAUNCHED"]);
@@ -93,28 +89,6 @@ function getTextBlocks(result: McpToolResult): string[] {
     .map((item) => item.text);
 }
 
-function parseFirstJsonBlock(blocks: string[]): Record<string, unknown> | null {
-  for (const block of blocks) {
-    const trimmed = block.trim();
-
-    if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
-      continue;
-    }
-
-    try {
-      const parsed = JSON.parse(trimmed) as unknown;
-
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        return parsed as Record<string, unknown>;
-      }
-    } catch {
-      continue;
-    }
-  }
-
-  return null;
-}
-
 function extractString(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value : null;
 }
@@ -166,7 +140,7 @@ function parseTeamFromProject(rawProject: string | null): string | null {
   }
 }
 
-function parseInProgressTasks(markdown: string): FeatureDefinition["tasks"] {
+function parseInProgressTasks(markdown: string): FeatureTask[] {
   const marker = "# 进行中的节点";
   const start = markdown.indexOf(marker);
 
@@ -198,114 +172,32 @@ function parseInProgressTasks(markdown: string): FeatureDefinition["tasks"] {
   }));
 }
 
-function findStatusInMarkdown(markdown: string, fallback: FeatureDefinition): MeegoStatusResult {
-  const title = extractMarkdownTableValue(markdown, "工作项名称") ?? fallback.title;
+function createFeatureFromMarkdown(markdown: string, seed: FeatureSeed): DashboardFeature | null {
+  const title = extractMarkdownTableValue(markdown, "工作项名称");
   const meegoState = extractMarkdownTableValue(markdown, "工作项状态");
   const rawProject = extractMarkdownTableValue(markdown, "所属空间");
   const rawRoles = extractMarkdownTableValue(markdown, "角色成员");
   const updatedAt =
-    extractMarkdownTableValue(markdown, "更新时间") ??
-    extractMarkdownTableValue(markdown, "创建时间") ??
-    fallback.dueDate;
-  const tasks = parseInProgressTasks(markdown);
+    extractMarkdownTableValue(markdown, "更新时间") ?? extractMarkdownTableValue(markdown, "创建时间");
+
+  if (!title || !updatedAt) {
+    return null;
+  }
 
   return {
+    id: seed.id,
     title,
-    description: fallback.description,
-    team: parseTeamFromProject(rawProject) ?? fallback.team,
-    owner: parseOwnerFromRoles(rawRoles) ?? fallback.owner,
+    description: "",
+    team: parseTeamFromProject(rawProject) ?? "Unknown Team",
+    owner: parseOwnerFromRoles(rawRoles) ?? "Unknown Owner",
     dueDate: updatedAt,
-    tasks: tasks.length > 0 ? tasks : fallback.tasks,
-    status: mapStateToStatus(meegoState ?? undefined, fallback.defaultStatus),
+    priority: seed.priority,
+    tasks: parseInProgressTasks(markdown),
+    status: mapStateToStatus(meegoState ?? undefined, seed.defaultStatus),
     meegoState,
-    meegoUrl: fallback.meegoUrl ?? null,
+    meegoUrl: seed.meegoUrl ?? null,
     lastSyncedAt: new Date().toISOString(),
     isLive: true,
-  };
-}
-
-function findStatusInObject(
-  payload: Record<string, unknown>,
-  fallback: FeatureDefinition,
-): MeegoStatusResult {
-  const directCandidates = [
-    payload.work_item_status,
-    payload.status,
-    payload.state,
-    payload.state_key,
-  ];
-
-  for (const candidate of directCandidates) {
-    const meegoState = extractString(candidate);
-
-    if (meegoState) {
-      return {
-        title: fallback.title,
-        description: fallback.description,
-        team: fallback.team,
-        owner: fallback.owner,
-        dueDate: fallback.dueDate,
-        tasks: fallback.tasks,
-        status: mapStateToStatus(meegoState, fallback.defaultStatus),
-        meegoState,
-        meegoUrl: fallback.meegoUrl ?? null,
-        lastSyncedAt: new Date().toISOString(),
-        isLive: true,
-      };
-    }
-  }
-
-  const fields = payload.fields;
-
-  if (Array.isArray(fields)) {
-    for (const field of fields) {
-      if (!field || typeof field !== "object") {
-        continue;
-      }
-
-      const candidate = field as Record<string, unknown>;
-      const alias = extractString(candidate.field_alias) ?? extractString(candidate.field_key);
-
-      if (alias !== "work_item_status") {
-        continue;
-      }
-
-      const meegoState = extractString(candidate.field_value) ?? extractString(candidate.state_key);
-
-      if (meegoState) {
-        return {
-          title: fallback.title,
-          description: fallback.description,
-          team: fallback.team,
-          owner: fallback.owner,
-          dueDate: fallback.dueDate,
-          tasks: fallback.tasks,
-          status: mapStateToStatus(meegoState, fallback.defaultStatus),
-          meegoState,
-          meegoUrl: fallback.meegoUrl ?? null,
-          lastSyncedAt: new Date().toISOString(),
-          isLive: true,
-        };
-      }
-    }
-  }
-
-  return fallbackStatus(fallback);
-}
-
-function fallbackStatus(feature: FeatureDefinition, override?: string | null): MeegoStatusResult {
-  return {
-    title: feature.title,
-    description: feature.description,
-    team: feature.team,
-    owner: feature.owner,
-    dueDate: feature.dueDate,
-    tasks: feature.tasks,
-    status: feature.defaultStatus,
-    meegoState: override ?? null,
-    meegoUrl: feature.meegoUrl ?? null,
-    lastSyncedAt: null,
-    isLive: false,
   };
 }
 
@@ -330,13 +222,13 @@ async function createMcpClient() {
   return { client, transport };
 }
 
-async function getFeatureStatusWithClient(
+async function getFeatureWithClient(
   client: Client,
-  feature: FeatureDefinition,
+  seed: FeatureSeed,
   projectKey?: string,
-): Promise<MeegoStatusResult> {
-  if (!feature.meegoUrl && !feature.meegoIssueId) {
-    return fallbackStatus(feature);
+): Promise<MeegoFetchResult> {
+  if (!seed.meegoUrl && !seed.meegoIssueId) {
+    return { feature: null, error: "Missing Meego reference." };
   }
 
   try {
@@ -344,13 +236,13 @@ async function getFeatureStatusWithClient(
       fields: ["work_item_status"],
     };
 
-    if (feature.meegoUrl) {
-      args.url = feature.meegoUrl;
-    } else if (feature.meegoIssueId && projectKey) {
+    if (seed.meegoUrl) {
+      args.url = seed.meegoUrl;
+    } else if (seed.meegoIssueId && projectKey) {
       args.project_key = projectKey;
-      args.work_item_id = feature.meegoIssueId;
+      args.work_item_id = seed.meegoIssueId;
     } else {
-      return fallbackStatus(feature);
+      return { feature: null, error: "Missing project key for Meego lookup." };
     }
 
     const result = (await client.callTool({
@@ -359,70 +251,60 @@ async function getFeatureStatusWithClient(
     })) as McpToolResult;
 
     const blocks = getTextBlocks(result);
-    const payload = parseFirstJsonBlock(blocks);
-
-    if (payload) {
-      return findStatusInObject(payload, feature);
-    }
-
     const markdown = blocks.find((block) => block.includes("# 工作项属性"));
 
-    if (markdown) {
-      return findStatusInMarkdown(markdown, feature);
+    if (!markdown) {
+      return {
+        feature: null,
+        error: blocks.find((block) => block.toLowerCase().includes("error")) ?? "Empty Meego response.",
+      };
     }
 
-    const errorText = blocks.find((block) => block.toLowerCase().includes("error")) ?? null;
-    return fallbackStatus(feature, errorText);
+    const feature = createFeatureFromMarkdown(markdown, seed);
+
+    if (!feature) {
+      return { feature: null, error: "Unable to parse Meego story details." };
+    }
+
+    return { feature };
   } catch (error) {
-    const message = error instanceof Error ? error.message : null;
-    return fallbackStatus(feature, message);
+    const message = error instanceof Error ? error.message : "Unknown Meego MCP error.";
+    return { feature: null, error: message };
   }
 }
 
-export async function getFeatureStatusesFromMeego(
-  features: FeatureDefinition[],
-): Promise<DashboardFeature[]> {
+export async function getFeatureStatusesFromMeego(features: FeatureSeed[]): Promise<MeegoCollectionResult> {
   const { projectKey } = getEnv();
   const hasDirectUrls = features.some((feature) => Boolean(feature.meegoUrl));
-
   const connection = await createMcpClient();
 
   if (!connection || (!projectKey && !hasDirectUrls)) {
-    return features.map((feature) => ({
-      ...feature,
-      status: feature.defaultStatus,
-      meegoState: null,
-      meegoUrl: feature.meegoUrl ?? null,
-      lastSyncedAt: null,
-      isLive: false,
-    }));
+    return {
+      features: [],
+      error: "Meego MCP is not configured.",
+    };
   }
 
   const { client, transport } = connection;
 
   try {
-    const enriched: DashboardFeature[] = [];
+    const resolved: DashboardFeature[] = [];
+    let firstError: string | null = null;
 
     for (const feature of features) {
-      const meego = await getFeatureStatusWithClient(client, feature, projectKey);
+      const result = await getFeatureWithClient(client, feature, projectKey);
 
-      enriched.push({
-        ...feature,
-        title: meego.title ?? feature.title,
-        description: meego.description ?? feature.description,
-        team: meego.team ?? feature.team,
-        owner: meego.owner ?? feature.owner,
-        dueDate: meego.dueDate ?? feature.dueDate,
-        tasks: meego.tasks ?? feature.tasks,
-        status: meego.status,
-        meegoState: meego.meegoState,
-        meegoUrl: meego.meegoUrl,
-        lastSyncedAt: meego.lastSyncedAt,
-        isLive: meego.isLive,
-      });
+      if (result.feature) {
+        resolved.push(result.feature);
+      } else if (!firstError) {
+        firstError = result.error ?? "Unable to load Meego stories.";
+      }
     }
 
-    return enriched;
+    return {
+      features: resolved,
+      error: resolved.length > 0 ? null : firstError ?? "Unable to load Meego stories.",
+    };
   } finally {
     await transport.close();
   }

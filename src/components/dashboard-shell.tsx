@@ -107,7 +107,7 @@ function formatDate(date: string) {
 
 function formatSyncLabel(lastSyncedAt: string | null, isLive: boolean) {
   if (!isLive || !lastSyncedAt) {
-    return "Preview data";
+    return "Live Meego data unavailable";
   }
 
   return `Synced ${new Intl.DateTimeFormat("en", {
@@ -431,7 +431,7 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
                 onClick={() => setShowAddHelp(true)}
                 className="inline-flex h-14 items-center justify-center rounded-[18px] bg-[var(--surface-strong)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-sm)] transition hover:bg-[#1c2133]"
               >
-                Add Feature
+                Add Meego Story
               </button>
             </div>
           </section>
@@ -453,6 +453,17 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
             viewMode === "grid" ? "xl:grid-cols-3" : "grid-cols-1"
           }`}
         >
+          {filteredFeatures.length === 0 ? (
+            <div className="col-span-full rounded-[30px] border border-[var(--border)] bg-white p-8 text-center shadow-[var(--shadow-sm)]">
+              <h3 className="text-[24px] font-semibold tracking-[-0.04em] text-[var(--text)]">
+                No live Meego stories loaded
+              </h3>
+              <p className="mt-3 text-[15px] leading-7 text-[var(--text-muted)]">
+                {initialData.loadError ??
+                  "Add valid Meego story URLs and make sure the MCP token is configured on the server."}
+              </p>
+            </div>
+          ) : null}
           {filteredFeatures.map((feature) => (
             <FeatureCard key={feature.id} feature={feature} viewMode={viewMode} />
           ))}
@@ -463,12 +474,11 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
         <div className="fixed inset-0 z-20 flex items-center justify-center bg-[#0f122280] p-4">
           <div className="w-full max-w-lg rounded-[30px] bg-white p-7 shadow-[0_28px_70px_rgba(17,19,34,0.18)]">
             <h2 className="text-[28px] font-semibold tracking-[-0.04em] text-[var(--text)]">
-              Add Feature
+              Add Meego Story
             </h2>
             <p className="mt-4 text-[15px] leading-7 text-[var(--text-muted)]">
-              The dashboard layout is ready. To connect a new card to Meego, add its title,
-              metadata, and `meegoIssueId` in `src/lib/feature-registry.ts`, then provide the
-              Meego API token and project key in your Vercel environment variables.
+              Add a real Meego story URL in `src/lib/feature-registry.ts`. The app now loads cards
+              only from live Meego MCP responses and no longer falls back to mock feature metadata.
             </p>
             <div className="mt-6 flex items-center justify-end gap-3">
               <button

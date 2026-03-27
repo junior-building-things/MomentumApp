@@ -25,7 +25,7 @@ function createSummary(features: DashboardFeature[]): DashboardSummaryCard[] {
 }
 
 export async function getDashboardData(): Promise<DashboardData> {
-  const enriched = await getFeatureStatusesFromMeego(featureRegistry);
+  const { features: enriched, error } = await getFeatureStatusesFromMeego(featureRegistry);
 
   const liveFeatures = enriched.filter((feature) => feature.isLive);
   const lastSyncedAt = liveFeatures.length > 0 ? new Date().toISOString() : null;
@@ -35,5 +35,6 @@ export async function getDashboardData(): Promise<DashboardData> {
     summary: createSummary(enriched),
     lastSyncedAt,
     isLive: liveFeatures.length > 0,
+    loadError: error,
   };
 }

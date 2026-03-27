@@ -56,4 +56,4 @@ If your Meego workspace uses different state keys, update the state mapping sets
 2. Add the Meego MCP environment variables in the Vercel project settings.
 3. Deploy.
 
-If the Meego MCP credentials are missing, the app falls back to preview data so the UI still renders.
+If the Meego MCP credentials are missing or the story lookup fails, the app shows an empty live-data state instead of mock cards.

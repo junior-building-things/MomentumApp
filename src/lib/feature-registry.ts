@@ -1,58 +1,25 @@
-import { FeatureDefinition } from "@/lib/types";
+import { FeatureSeed } from "@/lib/types";
 
-export const featureRegistry: FeatureDefinition[] = [
+export const featureRegistry: FeatureSeed[] = [
   {
     id: "expand-sa-row-eu",
-    title: "Expand SA to more regions in ROW and EU",
-    description: "",
-    team: "TikTok",
-    owner: "托马斯",
-    dueDate: "2026-03-27T15:50:24+08:00",
-    defaultStatus: "planned",
     priority: "medium",
+    defaultStatus: "planned",
     meegoIssueId: "6970364080",
     meegoUrl: "https://meego.larkoffice.com/tiktok/story/detail/6970364080",
-    tasks: [
-      { id: "ios-review-risk-check", label: "iOS审核风险排查", done: false },
-      { id: "ab-experiment-design", label: "AB实验设计", done: false },
-      { id: "compliance-assessment", label: "合规评估", done: false },
-      { id: "technical-evaluation", label: "技术评估&排优", done: false },
-    ],
   },
   {
     id: "id-attribution-sa-ugc-stickers",
-    title: "Improve ID attribution for SA UGC stickers",
-    description: "",
-    team: "TikTok",
-    owner: "托马斯",
-    dueDate: "2026-03-27T15:55:34+08:00",
-    defaultStatus: "planned",
     priority: "medium",
+    defaultStatus: "planned",
     meegoIssueId: "6970365064",
     meegoUrl: "https://meego.larkoffice.com/tiktok/story/detail/6970365064",
-    tasks: [
-      { id: "technical-evaluation", label: "技术评估&排优", done: false },
-      { id: "ios-review-risk-check", label: "iOS审核风险排查", done: false },
-    ],
   },
   {
     id: "animated-sa-pgc-stickers",
-    title: "Make SA PGC stickers animated by default",
-    description: "",
-    team: "TikTok",
-    owner: "托马斯",
-    dueDate: "2026-03-27T15:55:46+08:00",
-    defaultStatus: "planned",
     priority: "medium",
+    defaultStatus: "planned",
     meegoIssueId: "6970402572",
     meegoUrl: "https://meego.larkoffice.com/tiktok/story/detail/6970402572",
-    tasks: [
-      { id: "compliance-assessment", label: "合规评估", done: false },
-      { id: "ab-experiment-design", label: "AB实验设计", done: false },
-      { id: "tracking-design", label: "埋点设计", done: false },
-      { id: "technical-evaluation", label: "技术评估&排优", done: false },
-      { id: "content-design", label: "内容设计&Starling提交", done: false },
-      { id: "ios-review-risk-check", label: "iOS审核风险排查", done: false },
-    ],
   },
 ];
