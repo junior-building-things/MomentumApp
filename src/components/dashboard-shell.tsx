@@ -249,8 +249,8 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
   };
 
   return (
-    <main className="min-h-screen bg-[#0d1023] px-5 py-8 text-white md:px-8 lg:px-10">
-      <div className="mx-auto max-w-[1440px]">
+    <main className="min-h-screen bg-[#0d1023] px-6 py-8 text-white md:px-10 lg:px-14">
+      <div className="mx-auto w-full max-w-[1240px]">
         <header className="mb-9 flex items-start justify-between gap-6">
           <div className="flex items-center gap-5">
             <div className="flex h-18 w-18 items-center justify-center rounded-[22px] bg-gradient-to-br from-[#d100ff] via-[#7f1dff] to-[#5b3df5] text-white shadow-[0_18px_40px_rgba(127,29,255,0.35)]">
