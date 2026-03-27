@@ -344,7 +344,7 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
 
   return (
     <main className="min-h-screen bg-[#0d1023] px-5 py-6 text-white md:px-8 lg:px-10">
-      <div className="mx-auto w-full max-w-[min(68vw,1120px)]">
+      <div className="mx-auto w-full max-w-[min(82vw,1360px)]">
         <header className="mb-6 flex items-start justify-between gap-6">
           <div className="flex items-center gap-3.5">
             <div className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-gradient-to-br from-[#d100ff] via-[#7f1dff] to-[#5b3df5] text-white shadow-[0_18px_40px_rgba(127,29,255,0.35)]">
@@ -426,7 +426,7 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
         </section>
 
         <section className="mt-6 overflow-x-auto rounded-[20px] border border-[#25284b] bg-[#161937] shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
-          <div className="min-w-[1360px]">
+          <div className="min-w-[1480px]">
             <div className="grid grid-cols-[minmax(0,2.05fr)_126px_160px_82px_86px_100px_120px_110px_190px_140px] gap-4 px-5 py-3.5 text-[12px] font-semibold text-[#a0a5ba]">
               <div>Feature</div>
               <div>Status</div>
