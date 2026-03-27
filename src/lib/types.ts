@@ -43,6 +43,7 @@ export interface DashboardFeature {
   meegoState: string | null;
   meegoUrl: string | null;
   prdUrl: string | null;
+  complianceUrl: string | null;
   lastSyncedAt: string | null;
   isLive: boolean;
 }

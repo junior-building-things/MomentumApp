@@ -331,6 +331,12 @@ function createFeatureFromMarkdown(markdown: string, seed: FeatureSeed): Dashboa
   const rawBusinessLine = extractMarkdownFieldValue(markdown, "业务线");
   const rawPriority = extractMarkdownFieldValue(markdown, "优先级");
   const rawPrdUrl = extractMarkdownFieldValue(markdown, "PRD");
+  const rawComplianceUrl =
+    extractMarkdownFieldValue(markdown, "Compliance") ??
+    extractMarkdownFieldValue(markdown, "合规单") ??
+    extractMarkdownFieldValue(markdown, "合规工单") ??
+    extractMarkdownFieldValue(markdown, "合规 ticket") ??
+    extractMarkdownFieldValue(markdown, "Compliance Ticket");
   const rawQuarterlyCycle = extractMarkdownFieldValue(markdown, "Quarterly Cycle");
   const rawTags = extractMarkdownFieldValue(markdown, "标签");
   const rawActualVersion =
@@ -368,6 +374,7 @@ function createFeatureFromMarkdown(markdown: string, seed: FeatureSeed): Dashboa
     meegoState: translateDisplayLabel(meegoState),
     meegoUrl: seed.meegoUrl ?? null,
     prdUrl: rawPrdUrl ?? null,
+    complianceUrl: rawComplianceUrl ?? null,
     lastSyncedAt: new Date().toISOString(),
     isLive: true,
   };
