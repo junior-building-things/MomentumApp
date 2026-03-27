@@ -165,7 +165,7 @@ function FeatureRow({ feature }: { feature: DashboardFeature }) {
   const featureLink = feature.prdUrl ?? feature.meegoUrl;
 
   return (
-    <article className="grid grid-cols-[minmax(0,2.2fr)_160px_190px_86px_120px_72px] items-center gap-4 border-t border-[#25284b] px-5 py-3.5">
+    <article className="grid grid-cols-[minmax(0,2.5fr)_160px_210px_86px_120px] items-center gap-4 border-t border-[#25284b] px-5 py-3.5">
       <div className="min-w-0">
         {featureLink ? (
           <a
@@ -208,10 +208,6 @@ function FeatureRow({ feature }: { feature: DashboardFeature }) {
       <div>
         <p className="truncate text-[12px] text-[#b7bbca]">{feature.owner}</p>
       </div>
-
-      <div>
-        <p className="text-[12px] text-[#b7bbca]">{feature.quarter ?? "—"}</p>
-      </div>
     </article>
   );
 }
@@ -244,7 +240,6 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
         feature.team,
         feature.businessLine ?? "",
         feature.priorityLabel,
-        feature.quarter ?? "",
         feature.meegoState ?? "",
       ]
         .join(" ")
@@ -344,14 +339,13 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
         </section>
 
         <section className="mt-6 overflow-x-auto rounded-[20px] border border-[#25284b] bg-[#161937] shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
-          <div className="min-w-[980px]">
-            <div className="grid grid-cols-[minmax(0,2.2fr)_160px_190px_86px_120px_72px] gap-4 px-5 py-3.5 text-[12px] font-semibold text-[#a0a5ba]">
+          <div className="min-w-[920px]">
+            <div className="grid grid-cols-[minmax(0,2.5fr)_160px_210px_86px_120px] gap-4 px-5 py-3.5 text-[12px] font-semibold text-[#a0a5ba]">
               <div>Feature</div>
               <div>Current Status</div>
               <div>Business Line</div>
               <div>Priority</div>
               <div>PM</div>
-              <div>Quarter</div>
             </div>
 
             {filteredFeatures.length === 0 ? (
