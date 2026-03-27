@@ -105,16 +105,16 @@ function SummaryCard({
   };
 
   return (
-    <div className="rounded-[22px] border border-[#25284b] bg-[#161937] px-7 py-7">
+    <div className="rounded-[20px] border border-[#25284b] bg-[#161937] px-6 py-6">
       <div className="flex items-start justify-between gap-6">
         <div>
-          <p className="text-[16px] font-medium text-[#9aa0b6]">{label}</p>
-          <p className="mt-3 text-[52px] font-semibold leading-none tracking-[-0.06em] text-white">
+          <p className="text-[14px] font-medium text-[#9aa0b6]">{label}</p>
+          <p className="mt-2.5 text-[42px] font-semibold leading-none tracking-[-0.06em] text-white">
             {value}
           </p>
         </div>
         <div
-          className={`flex h-14 w-14 items-center justify-center rounded-full ${classes[tone]}`}
+          className={`flex h-12 w-12 items-center justify-center rounded-full ${classes[tone]}`}
         >
           {icons[tone]}
         </div>
@@ -135,12 +135,12 @@ function ToolbarSelect<T extends string>({
   options: Record<T, string>;
 }) {
   return (
-    <label className="relative flex h-[52px] w-[230px] items-center rounded-[16px] border border-[#292d57] bg-[#161937] px-4 text-white">
+    <label className="relative flex h-[46px] w-[210px] items-center rounded-[14px] border border-[#292d57] bg-[#161937] px-3.5 text-white">
       <span className="mr-4 text-[#858ba6]">{icon}</span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value as T)}
-        className="w-full appearance-none bg-transparent pr-10 text-[16px] font-medium text-white outline-none"
+        className="w-full appearance-none bg-transparent pr-9 text-[14px] font-medium text-white outline-none"
       >
         {(Object.keys(options) as T[]).map((optionValue) => (
           <option key={optionValue} value={optionValue} className="bg-[#161937] text-white">
@@ -148,7 +148,7 @@ function ToolbarSelect<T extends string>({
           </option>
         ))}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-5 h-5 w-5 text-[#858ba6]" />
+      <ChevronDown className="pointer-events-none absolute right-4 h-4 w-4 text-[#858ba6]" />
     </label>
   );
 }
@@ -158,17 +158,17 @@ function FeatureRow({ feature }: { feature: DashboardFeature }) {
   const priority = priorityMeta[feature.priority];
 
   return (
-    <article className="grid grid-cols-[minmax(0,1.9fr)_190px_150px_40px] items-center gap-6 border-t border-[#25284b] px-7 py-6">
+    <article className="grid grid-cols-[minmax(0,1.9fr)_170px_130px_36px] items-center gap-5 border-t border-[#25284b] px-6 py-5">
       <div className="min-w-0">
-        <h3 className="text-[18px] font-semibold tracking-[-0.04em] text-white">{feature.title}</h3>
-        <p className="mt-1 truncate text-[14px] leading-6 text-[#7f859f]">
+        <h3 className="text-[16px] font-semibold tracking-[-0.04em] text-white">{feature.title}</h3>
+        <p className="mt-1 truncate text-[13px] leading-5 text-[#7f859f]">
           {buildFeatureSubtitle(feature)}
         </p>
       </div>
 
       <div>
         <span
-          className={`inline-flex items-center rounded-[9px] border px-3.5 py-1 text-[15px] font-semibold ${status.className}`}
+          className={`inline-flex items-center rounded-[8px] border px-3 py-1 text-[13px] font-semibold ${status.className}`}
         >
           {status.label}
         </span>
@@ -176,7 +176,7 @@ function FeatureRow({ feature }: { feature: DashboardFeature }) {
 
       <div>
         <span
-          className={`inline-flex items-center rounded-[9px] border px-3.5 py-1 text-[15px] font-semibold ${priority.className}`}
+          className={`inline-flex items-center rounded-[8px] border px-3 py-1 text-[13px] font-semibold ${priority.className}`}
         >
           {priority.label}
         </span>
@@ -184,10 +184,10 @@ function FeatureRow({ feature }: { feature: DashboardFeature }) {
 
       <button
         type="button"
-        className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-transparent text-[#7f859f] transition hover:border-[#2f335f] hover:bg-[#191c37] hover:text-white"
+        className="flex h-8 w-8 items-center justify-center rounded-[9px] border border-transparent text-[#7f859f] transition hover:border-[#2f335f] hover:bg-[#191c37] hover:text-white"
         aria-label={`Edit ${feature.title}`}
       >
-        <PencilLine className="h-4.5 w-4.5" />
+        <PencilLine className="h-4 w-4" />
       </button>
     </article>
   );
@@ -236,45 +236,45 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
   };
 
   return (
-    <main className="min-h-screen bg-[#0d1023] px-6 py-7 text-white md:px-10 lg:px-12">
-      <div className="mx-auto w-full max-w-[min(75vw,1536px)]">
-        <header className="mb-7 flex items-start justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-gradient-to-br from-[#d100ff] via-[#7f1dff] to-[#5b3df5] text-white shadow-[0_18px_40px_rgba(127,29,255,0.35)]">
-              <Bolt className="h-6 w-6" />
+    <main className="min-h-screen bg-[#0d1023] px-5 py-6 text-white md:px-8 lg:px-10">
+      <div className="mx-auto w-full max-w-[min(68vw,1120px)]">
+        <header className="mb-6 flex items-start justify-between gap-6">
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-gradient-to-br from-[#d100ff] via-[#7f1dff] to-[#5b3df5] text-white shadow-[0_18px_40px_rgba(127,29,255,0.35)]">
+              <Bolt className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-[34px] font-semibold leading-none tracking-[-0.06em] text-white">
+              <h1 className="text-[28px] font-semibold leading-none tracking-[-0.06em] text-white">
                 Momentum
               </h1>
-              <p className="mt-1 text-[15px] text-[#9aa0b6]">Product Management Dashboard</p>
+              <p className="mt-1 text-[13px] text-[#9aa0b6]">Product Management Dashboard</p>
             </div>
           </div>
 
           <button
             type="button"
-            className="flex h-13 w-13 items-center justify-center rounded-[16px] bg-[#20254b] text-[#ffd95c]"
+            className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-[#20254b] text-[#ffd95c]"
             aria-label="Theme"
           >
-            <Moon className="h-6 w-6" />
+            <Moon className="h-5 w-5" />
           </button>
         </header>
 
-        <section className="grid gap-5 md:grid-cols-2">
+        <section className="grid gap-4 md:grid-cols-2">
           <SummaryCard label="Total Features" value={summary.total} tone="blue" />
           <SummaryCard label="In Progress" value={summary.inProgress} tone="amber" />
           <SummaryCard label="Launched" value={summary.launched} tone="green" />
           <SummaryCard label="Critical Priority" value={summary.critical} tone="red" />
         </section>
 
-        <section className="mt-7 flex flex-wrap items-center gap-4">
-          <label className="flex h-[52px] w-[280px] items-center rounded-[16px] border border-[#292d57] bg-[#161937] px-4 text-[#8b90aa]">
-            <Search className="mr-4 h-6 w-6 shrink-0" />
+        <section className="mt-6 flex flex-wrap items-center gap-3">
+          <label className="flex h-[46px] w-[250px] items-center rounded-[14px] border border-[#292d57] bg-[#161937] px-3.5 text-[#8b90aa]">
+            <Search className="mr-3 h-5 w-5 shrink-0" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search features..."
-              className="w-full border-none bg-transparent text-[16px] text-white outline-none placeholder:text-[#767d9b]"
+              className="w-full border-none bg-transparent text-[14px] text-white outline-none placeholder:text-[#767d9b]"
             />
           </label>
 
@@ -292,33 +292,33 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
             options={priorityFilterLabel}
           />
 
-          <div className="flex h-[52px] items-center overflow-hidden rounded-[16px] border border-[#292d57] bg-[#161937]">
+          <div className="flex h-[46px] items-center overflow-hidden rounded-[14px] border border-[#292d57] bg-[#161937]">
             <button
               type="button"
-              className="flex h-full w-[52px] items-center justify-center text-[#747a96]"
+              className="flex h-full w-[46px] items-center justify-center text-[#747a96]"
               aria-label="Grid view"
             >
-              <Grid2x2 className="h-5 w-5" />
+              <Grid2x2 className="h-4.5 w-4.5" />
             </button>
             <button
               type="button"
-              className="flex h-full w-[52px] items-center justify-center bg-[#242746] text-white"
+              className="flex h-full w-[46px] items-center justify-center bg-[#242746] text-white"
               aria-label="List view"
             >
-              <LayoutList className="h-5 w-5" />
+              <LayoutList className="h-4.5 w-4.5" />
             </button>
           </div>
 
           <button
             type="button"
-            className="inline-flex h-[52px] items-center justify-center rounded-[16px] bg-white px-7 text-[16px] font-semibold text-black transition hover:bg-[#f2f3f8]"
+            className="inline-flex h-[46px] items-center justify-center rounded-[14px] bg-white px-6 text-[14px] font-semibold text-black transition hover:bg-[#f2f3f8]"
           >
             Add Feature
           </button>
         </section>
 
-        <section className="mt-7 overflow-hidden rounded-[24px] border border-[#25284b] bg-[#161937] shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
-          <div className="grid grid-cols-[minmax(0,1.9fr)_190px_150px_40px] gap-6 px-7 py-5 text-[15px] font-semibold text-[#a0a5ba]">
+        <section className="mt-6 overflow-hidden rounded-[22px] border border-[#25284b] bg-[#161937] shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
+          <div className="grid grid-cols-[minmax(0,1.9fr)_170px_130px_36px] gap-5 px-6 py-4 text-[13px] font-semibold text-[#a0a5ba]">
             <div>Feature</div>
             <div>Current Status</div>
             <div>Risk</div>
@@ -327,10 +327,10 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
 
           {filteredFeatures.length === 0 ? (
             <div className="border-t border-[#25284b] px-9 py-14">
-              <h3 className="text-[22px] font-semibold tracking-[-0.04em] text-white">
+              <h3 className="text-[18px] font-semibold tracking-[-0.04em] text-white">
                 No live Meego stories loaded
               </h3>
-              <p className="mt-3 text-[15px] leading-7 text-[#848aa4]">
+              <p className="mt-3 text-[13px] leading-6 text-[#848aa4]">
                 {initialData.loadError ?? "Try changing the filters or search term."}
               </p>
             </div>
