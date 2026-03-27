@@ -77,19 +77,6 @@ const priorityFilterLabel: Record<"all" | FeaturePriority, string> = {
   high: "High",
 };
 
-function formatSyncLabel(lastSyncedAt: string | null, isLive: boolean) {
-  if (!isLive || !lastSyncedAt) {
-    return "Live Meego data unavailable";
-  }
-
-  return `Synced ${new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(lastSyncedAt))}`;
-}
-
 function buildFeatureSubtitle(feature: DashboardFeature) {
   return feature.description || [feature.team, feature.owner, feature.meegoState].filter(Boolean).join(" • ");
 }
@@ -118,7 +105,7 @@ function SummaryCard({
   };
 
   return (
-    <div className="rounded-[26px] border border-[#25284b] bg-[#161937] px-9 py-10">
+    <div className="rounded-[26px] border border-[#25284b] bg-[#161937] px-8 py-9">
       <div className="flex items-start justify-between gap-6">
         <div>
           <p className="text-[19px] font-medium text-[#9aa0b6]">{label}</p>
@@ -148,7 +135,7 @@ function ToolbarSelect<T extends string>({
   options: Record<T, string>;
 }) {
   return (
-    <label className="relative flex h-16 min-w-[290px] items-center rounded-[18px] border border-[#292d57] bg-[#161937] px-5 text-white">
+    <label className="relative flex h-[60px] w-[258px] items-center rounded-[18px] border border-[#292d57] bg-[#161937] px-5 text-white">
       <span className="mr-4 text-[#858ba6]">{icon}</span>
       <select
         value={value}
@@ -171,17 +158,17 @@ function FeatureRow({ feature }: { feature: DashboardFeature }) {
   const priority = priorityMeta[feature.priority];
 
   return (
-    <article className="grid grid-cols-[minmax(0,1.9fr)_250px_180px_56px] items-center gap-8 border-t border-[#25284b] px-9 py-8">
+    <article className="grid grid-cols-[minmax(0,1.9fr)_220px_170px_48px] items-center gap-7 border-t border-[#25284b] px-8 py-7">
       <div className="min-w-0">
-        <h3 className="text-[24px] font-semibold tracking-[-0.04em] text-white">{feature.title}</h3>
-        <p className="mt-2 truncate text-[16px] leading-7 text-[#7f859f]">
+        <h3 className="text-[22px] font-semibold tracking-[-0.04em] text-white">{feature.title}</h3>
+        <p className="mt-1.5 truncate text-[15px] leading-7 text-[#7f859f]">
           {buildFeatureSubtitle(feature)}
         </p>
       </div>
 
       <div>
         <span
-          className={`inline-flex items-center rounded-[10px] border px-5 py-2 text-[18px] font-semibold ${status.className}`}
+          className={`inline-flex items-center rounded-[10px] border px-4 py-1.5 text-[17px] font-semibold ${status.className}`}
         >
           {status.label}
         </span>
@@ -189,7 +176,7 @@ function FeatureRow({ feature }: { feature: DashboardFeature }) {
 
       <div>
         <span
-          className={`inline-flex items-center rounded-[10px] border px-5 py-2 text-[18px] font-semibold ${priority.className}`}
+          className={`inline-flex items-center rounded-[10px] border px-4 py-1.5 text-[17px] font-semibold ${priority.className}`}
         >
           {priority.label}
         </span>
@@ -249,9 +236,9 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
   };
 
   return (
-    <main className="min-h-screen bg-[#0d1023] px-6 py-8 text-white md:px-10 lg:px-14">
-      <div className="mx-auto w-full max-w-[min(75vw,1200px)]">
-        <header className="mb-9 flex items-start justify-between gap-6">
+    <main className="min-h-screen bg-[#0d1023] px-6 py-8 text-white md:px-10 lg:px-12">
+      <div className="mx-auto w-full max-w-[min(75vw,1536px)]">
+        <header className="mb-8 flex items-start justify-between gap-6">
           <div className="flex items-center gap-5">
             <div className="flex h-18 w-18 items-center justify-center rounded-[22px] bg-gradient-to-br from-[#d100ff] via-[#7f1dff] to-[#5b3df5] text-white shadow-[0_18px_40px_rgba(127,29,255,0.35)]">
               <Bolt className="h-8 w-8" />
@@ -273,15 +260,15 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
           </button>
         </header>
 
-        <section className="grid gap-7 md:grid-cols-2">
+        <section className="grid gap-6 md:grid-cols-2">
           <SummaryCard label="Total Features" value={summary.total} tone="blue" />
           <SummaryCard label="In Progress" value={summary.inProgress} tone="amber" />
           <SummaryCard label="Launched" value={summary.launched} tone="green" />
           <SummaryCard label="Critical Priority" value={summary.critical} tone="red" />
         </section>
 
-        <section className="mt-8 flex flex-wrap items-center gap-5">
-          <label className="flex h-16 min-w-[340px] flex-1 items-center rounded-[18px] border border-[#292d57] bg-[#161937] px-5 text-[#8b90aa]">
+        <section className="mt-8 flex flex-wrap items-center gap-4">
+          <label className="flex h-[60px] w-[296px] items-center rounded-[18px] border border-[#292d57] bg-[#161937] px-5 text-[#8b90aa]">
             <Search className="mr-4 h-6 w-6 shrink-0" />
             <input
               value={query}
@@ -305,17 +292,17 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
             options={priorityFilterLabel}
           />
 
-          <div className="flex h-16 items-center overflow-hidden rounded-[18px] border border-[#292d57] bg-[#161937]">
+          <div className="flex h-[60px] items-center overflow-hidden rounded-[18px] border border-[#292d57] bg-[#161937]">
             <button
               type="button"
-              className="flex h-full w-18 items-center justify-center text-[#747a96]"
+              className="flex h-full w-[60px] items-center justify-center text-[#747a96]"
               aria-label="Grid view"
             >
               <Grid2x2 className="h-6 w-6" />
             </button>
             <button
               type="button"
-              className="flex h-full w-18 items-center justify-center bg-[#242746] text-white"
+              className="flex h-full w-[60px] items-center justify-center bg-[#242746] text-white"
               aria-label="List view"
             >
               <LayoutList className="h-6 w-6" />
@@ -324,14 +311,14 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
 
           <button
             type="button"
-            className="inline-flex h-16 items-center justify-center rounded-[18px] bg-white px-9 text-[18px] font-semibold text-black transition hover:bg-[#f2f3f8]"
+            className="inline-flex h-[60px] items-center justify-center rounded-[18px] bg-white px-9 text-[18px] font-semibold text-black transition hover:bg-[#f2f3f8]"
           >
             Add Feature
           </button>
         </section>
 
         <section className="mt-8 overflow-hidden rounded-[28px] border border-[#25284b] bg-[#161937] shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
-          <div className="grid grid-cols-[minmax(0,1.9fr)_250px_180px_56px] gap-8 px-9 py-7 text-[17px] font-semibold text-[#a0a5ba]">
+          <div className="grid grid-cols-[minmax(0,1.9fr)_220px_170px_48px] gap-7 px-8 py-6 text-[17px] font-semibold text-[#a0a5ba]">
             <div>Feature</div>
             <div>Current Status</div>
             <div>Risk</div>
@@ -351,13 +338,6 @@ export function DashboardShell({ initialData }: { initialData: DashboardData }) 
             filteredFeatures.map((feature) => <FeatureRow key={feature.id} feature={feature} />)
           )}
         </section>
-
-        <footer className="mt-5 flex items-center justify-between px-1 text-[16px] text-[#7f859f]">
-          <p>
-            {filteredFeatures.length} feature{filteredFeatures.length === 1 ? "" : "s"}
-          </p>
-          <p>{formatSyncLabel(initialData.lastSyncedAt, initialData.isLive)}</p>
-        </footer>
       </div>
     </main>
   );
